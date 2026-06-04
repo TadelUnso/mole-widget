@@ -1,0 +1,64 @@
+# mole-mac-widget
+
+A native macOS desktop widget showing live system metrics in the terminal aesthetic of the `mo status` CLI (mole): a borderless window living at desktop level — above the wallpaper, below application windows.
+
+```
+◉ CPU ························   ▥ Memory ····················
+Total  ███░░░░░░░░░░░░   5.5%    Used   ███████░░░░░░   60.8%
+Core1  █████░░░░░░░░░░  25.4%    Free   ████░░░░░░░░░   39.2%
+Core2  ████░░░░░░░░░░░  17.8%    Total  9.7 GB / 16.0 GB
+Core3  ██░░░░░░░░░░░░░   8.1%    Cached 3.7 GB
+Load   1.61 / 1.72 / 1.67       Avail  4.4 GB
+
+▦ Disk ·······················   ◪ Power ·····················
+Usage  ██████░░░░░░░░░  38.1%    Level  ██████████████  100.0%
+Total  460.4 GB · APFS           Health ██████████████  100.0%
+Space  175G used · 285G free     Status Discharging · 14:15
+Speed  R 0.0 · W 0.0 MB/s        Battery 3 cycles · 30.4°C
+```
+
+## Features
+
+- **CPU** — total usage, top-3 busiest cores, load average (refreshes every 2 s)
+- **Memory** — used/free, total, cached, available (every 2 s)
+- **Disk** — root volume usage, read/write speed (I/O every 2 s, usage once a minute)
+- **Power** — charge level, battery health, status, cycle count, temperature (every 30 s)
+- Visible on all Spaces, ignored by Mission Control and ⌘Tab, stays below regular windows
+- Drag it anywhere with the mouse; position is remembered across launches
+- 🔒 Clickable lock icon on the widget (plus a "Lock position" menu item) pins the position
+- Menu bar icon with Lock position and Quit; no Dock icon
+
+## Requirements
+
+- macOS 14+
+- Swift 6 toolchain — Command Line Tools are enough (`xcode-select --install`), full Xcode is not required
+
+## Build & Install
+
+```bash
+make app
+open "dist/Mole Widget.app"   # or move it to /Applications
+```
+
+## Development
+
+```bash
+make run    # run a dev build
+make test   # run the test suite (32 tests)
+```
+
+> **Important:** run tests only via `make test`. On a machine without full Xcode
+> a bare `swift test` silently runs zero tests and exits 0 — the Makefile passes
+> the toolchain flags required for Swift Testing from Command Line Tools.
+
+## Architecture
+
+```
+Sources/MoleWidgetCore/    — library
+  CPU|Memory|Disk|Power/   — one module per domain: pure math + collector
+  Store/MetricsStore.swift — @Observable store, 2/30/60 s timers
+  Views/                   — SwiftUI, terminal theme
+Sources/MoleWidget/        — app shell: desktop-level window, MenuBarExtra
+```
+
+All computation is pure functions over raw snapshots (unit-tested); collectors are thin wrappers around mach APIs / IOKit with smoke tests.

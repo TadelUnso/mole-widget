@@ -1,0 +1,8 @@
+.build/
+dist/
+.swiftpm/
+.DS_Store
+
+# internal working artifacts — not part of the public repo
+docs/
+.claude/
