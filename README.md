@@ -25,8 +25,10 @@ Speed  R 0.0 · W 0.0 MB/s        Battery 3 cycles · 30.4°C
 - **Power** — charge level, battery health, status, cycle count, temperature (every 30 s)
 - Visible on all Spaces, ignored by Mission Control and ⌘Tab, stays below regular windows
 - Drag it anywhere with the mouse; position is remembered across launches
-- 🔒 Clickable lock icon on the widget (plus a "Lock position" menu item) pins the position
-- Menu bar icon with Lock position and Quit; no Dock icon
+- Resizable: drag the right edge to adjust the width (490–880 pt), saved across launches
+- 🔒 Clickable lock icon on the widget (plus a "Lock position" menu item) pins both position and size
+- Launch at login toggle in the menu bar
+- Menu bar icon with Lock position, Launch at login and Quit; no Dock icon
 
 ## Requirements
 
@@ -53,6 +55,22 @@ Quit it any time from the menu bar icon → **Quit mole-widget**.
 ```bash
 make app
 open "dist/Mole Widget.app"   # or move it to /Applications
+```
+
+## Uninstall
+
+1. Toggle off **Launch at login** in the menu bar (if you enabled it) and quit the widget
+2. Remove the package:
+
+```bash
+brew uninstall mole-mac-widget
+```
+
+3. Optional cleanup — remove the tap and the saved settings:
+
+```bash
+brew untap bsnkhua/tap
+defaults delete com.sbezbabnykh.mole-widget
 ```
 
 ## Development

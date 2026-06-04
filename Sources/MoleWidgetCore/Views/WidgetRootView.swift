@@ -1,16 +1,21 @@
+import AppKit
 import SwiftUI
 
-/// Root widget view: a 2×2 grid of sections on a dark background
-/// with a clickable lock button for position locking in the top-right corner.
+/// Root widget view: a 2×2 grid of sections on a dark backdrop,
+/// a clickable lock icon in the top-right corner, and an invisible
+/// resize handle along the right edge (drag to adjust width).
 public struct WidgetRootView: View {
     let store: MetricsStore
 
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
+    @AppStorage(WidgetSettings.widgetWidthKey) private var widgetWidth = WidgetSettings.defaultWidth
 
-    /// Column width chosen so the total widget width
-    /// (2 columns + column gap + padding ≈ 520pt) matches the width
-    /// of a native macOS small + medium widget pair.
-    private let columnWidth: CGFloat = 232
+    @State private var dragStartWidth: Double?
+
+    /// Two columns + inter-column spacing (24) + horizontal padding (2×16).
+    private var columnWidth: CGFloat {
+        (WidgetSettings.clampWidth(widgetWidth) - 24 - 32) / 2
+    }
 
     public init(store: MetricsStore) {
         self.store = store
@@ -37,9 +42,39 @@ public struct WidgetRootView: View {
             Theme.background.opacity(0.92),
             in: RoundedRectangle(cornerRadius: 12)
         )
+        .overlay(alignment: .trailing) {
+            resizeHandle
+        }
         .overlay(alignment: .topTrailing) {
             lockButton
         }
+    }
+
+    /// Invisible strip along the right edge; drag it to resize the widget.
+    /// Disabled while the position is locked.
+    private var resizeHandle: some View {
+        Color.clear
+            .frame(width: 10)
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .onHover { inside in
+                guard !positionLocked else { return }
+                if inside {
+                    NSCursor.resizeLeftRight.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            .gesture(
+                DragGesture(minimumDistance: 1, coordinateSpace: .global)
+                    .onChanged { value in
+                        guard !positionLocked else { return }
+                        let start = dragStartWidth ?? widgetWidth
+                        dragStartWidth = start
+                        widgetWidth = WidgetSettings.clampWidth(start + value.translation.width)
+                    }
+                    .onEnded { _ in dragStartWidth = nil }
+            )
     }
 
     private var lockButton: some View {
@@ -55,7 +90,7 @@ public struct WidgetRootView: View {
         .buttonStyle(.plain)
         .padding(6)
         .help(positionLocked
-            ? "Position is locked — click to unlock"
-            : "Click to lock the widget position")
+            ? "Position and size are locked — click to unlock"
+            : "Click to lock the widget position and size")
     }
 }

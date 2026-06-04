@@ -1,5 +1,6 @@
 import AppKit
 import MoleWidgetCore
+import ServiceManagement
 import SwiftUI
 
 @main
@@ -10,12 +11,39 @@ struct MoleWidgetApp: App {
     var body: some Scene {
         MenuBarExtra("mole-widget", systemImage: "chart.bar.fill") {
             Toggle("Lock position", isOn: $positionLocked)
+            LaunchAtLoginToggle()
             Divider()
             Button("Quit mole-widget") {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
         }
+    }
+}
+
+/// "Launch at login" menu item backed by SMAppService (macOS 13+).
+/// Registration only works when running as a proper .app bundle;
+/// from a bare dev binary register() throws and the toggle reverts.
+private struct LaunchAtLoginToggle: View {
+    @State private var enabled = SMAppService.mainApp.status == .enabled
+
+    var body: some View {
+        Toggle("Launch at login", isOn: Binding(
+            get: { enabled },
+            set: { newValue in
+                do {
+                    if newValue {
+                        try SMAppService.mainApp.register()
+                    } else {
+                        try SMAppService.mainApp.unregister()
+                    }
+                    enabled = newValue
+                } catch {
+                    // Keep the toggle in sync with reality on failure
+                    enabled = SMAppService.mainApp.status == .enabled
+                }
+            }
+        ))
     }
 }
 
@@ -93,6 +121,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         window.orderFrontRegardless()
         self.window = window
+
+        // The resize handle in WidgetRootView writes the new width to
+        // UserDefaults; resize the window to follow the SwiftUI content.
+        NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.syncWindowWidth() }
+        }
+    }
+
+    private func syncWindowWidth() {
+        guard let window else { return }
+        let stored = UserDefaults.standard.object(forKey: WidgetSettings.widgetWidthKey) as? Double
+            ?? WidgetSettings.defaultWidth
+        let targetWidth = WidgetSettings.clampWidth(stored)
+        guard abs(window.frame.width - targetWidth) > 0.5 else { return }
+        // Borderless window: frame size == content size; origin stays put,
+        // so the right edge follows the drag direction.
+        window.setContentSize(NSSize(width: targetWidth, height: window.frame.height))
     }
 
     func applicationWillTerminate(_ notification: Notification) {
