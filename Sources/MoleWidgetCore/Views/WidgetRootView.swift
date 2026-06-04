@@ -22,24 +22,28 @@ public struct WidgetRootView: View {
     }
 
     public var body: some View {
-        Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 16) {
-            GridRow {
-                CPUSectionView(snapshot: store.cpu)
-                    .frame(width: columnWidth, alignment: .topLeading)
-                MemorySectionView(snapshot: store.memory)
-                    .frame(width: columnWidth, alignment: .topLeading)
-            }
-            GridRow {
-                DiskSectionView(usage: store.diskUsage, io: store.diskIO)
-                    .frame(width: columnWidth, alignment: .topLeading)
-                PowerSectionView(snapshot: store.power)
-                    .frame(width: columnWidth, alignment: .topLeading)
-            }
-            GridRow {
-                NetworkSectionView(rates: store.netRates, info: store.networkInfo)
-                    .frame(width: columnWidth, alignment: .topLeading)
-                ProcessesSectionView(processes: store.topProcesses)
-                    .frame(width: columnWidth, alignment: .topLeading)
+        VStack(alignment: .leading, spacing: 12) {
+            HeaderView(info: store.systemInfo, score: store.healthScore)
+
+            Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 16) {
+                GridRow {
+                    CPUSectionView(snapshot: store.cpu)
+                        .frame(width: columnWidth, alignment: .topLeading)
+                    MemorySectionView(snapshot: store.memory)
+                        .frame(width: columnWidth, alignment: .topLeading)
+                }
+                GridRow {
+                    DiskSectionView(usage: store.diskUsage, io: store.diskIO)
+                        .frame(width: columnWidth, alignment: .topLeading)
+                    PowerSectionView(snapshot: store.power)
+                        .frame(width: columnWidth, alignment: .topLeading)
+                }
+                GridRow {
+                    NetworkSectionView(rates: store.netRates, info: store.networkInfo)
+                        .frame(width: columnWidth, alignment: .topLeading)
+                    ProcessesSectionView(processes: store.topProcesses)
+                        .frame(width: columnWidth, alignment: .topLeading)
+                }
             }
         }
         .font(Theme.font)

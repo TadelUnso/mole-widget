@@ -14,6 +14,8 @@ public final class MetricsStore {
     public private(set) var netRates: NetIORates?
     public private(set) var networkInfo: NetworkInfo?
     public private(set) var topProcesses: [ProcessUsage] = []
+    public private(set) var systemInfo: SystemInfoSnapshot?
+    public private(set) var healthScore: Int = 100
 
     @ObservationIgnored private let cpuCollector = CPUCollector()
     @ObservationIgnored private let memoryCollector = MemoryCollector()
@@ -21,6 +23,7 @@ public final class MetricsStore {
     @ObservationIgnored private let powerCollector = PowerCollector()
     @ObservationIgnored private let networkCollector = NetworkCollector()
     @ObservationIgnored private let processCollector = ProcessCollector()
+    @ObservationIgnored private let systemInfoCollector = SystemInfoCollector()
 
     @ObservationIgnored private var previousCPU: CPUSample?
     @ObservationIgnored private var previousIO: (counters: DiskIOCounters, at: Date)?
@@ -40,6 +43,7 @@ public final class MetricsStore {
         refreshDiskUsage()
         refreshPower()
         networkInfo = networkCollector.info()
+        systemInfo = systemInfoCollector.sample()
         timers = [
             Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
                 Task { @MainActor in self?.refreshFast() }
@@ -113,6 +117,15 @@ public final class MetricsStore {
         } else {
             previousProcs = nil // collection failure → next sample pair starts fresh
         }
+
+        healthScore = HealthScore.compute(
+            cpu: cpu?.totalUsage,
+            memUsedFraction: memory?.usedFraction,
+            diskUsedFraction: diskUsage?.usedFraction,
+            batteryHealth: power?.healthFraction,
+            batteryLevel: power?.levelFraction,
+            isCharging: power?.isCharging ?? false
+        )
     }
 
     /// Disk usage — every 60 seconds (changes slowly).
@@ -122,9 +135,10 @@ public final class MetricsStore {
         }
     }
 
-    /// Battery + network interface info — every 30 seconds.
+    /// Battery + network interface info + system info — every 30 seconds.
     public func refreshPower() {
         power = powerCollector.sample()
         networkInfo = networkCollector.info()
+        systemInfo = systemInfoCollector.sample()
     }
 }
