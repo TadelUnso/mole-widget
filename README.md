@@ -1,5 +1,7 @@
 # mole-mac-widget
 
+[![CI](https://github.com/bsnkhua/mole-mac-widget/actions/workflows/ci.yml/badge.svg)](https://github.com/bsnkhua/mole-mac-widget/actions/workflows/ci.yml)
+
 A native macOS desktop widget showing live system metrics in the terminal aesthetic of the `mo status` CLI (mole): a borderless window living at desktop level — above the wallpaper, below application windows.
 
 <img src="assets/widget.webp" width="520" alt="Mole Widget on the desktop">
