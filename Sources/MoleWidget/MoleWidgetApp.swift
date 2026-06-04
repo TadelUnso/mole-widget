@@ -87,6 +87,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory) // no Dock icon
+
+        // After `brew upgrade` the registered login item points at the old
+        // versioned Cellar path; re-registering from the current bundle
+        // refreshes it. Throws for non-bundled dev builds — ignored.
+        if SMAppService.mainApp.status == .enabled {
+            try? SMAppService.mainApp.register()
+        }
+
         store.start()
 
         let window = DesktopWindow(
