@@ -33,7 +33,22 @@ Speed  R 0.0 · W 0.0 MB/s        Battery 3 cycles · 30.4°C
 - macOS 14+
 - Swift 6 toolchain — Command Line Tools are enough (`xcode-select --install`), full Xcode is not required
 
-## Build & Install
+## Install
+
+### Homebrew
+
+```bash
+brew install bsnkhua/tap/mole-mac-widget
+mole-widget   # launch the widget
+```
+
+The formula builds the widget from source on your machine (~30 s; needs only
+the Command Line Tools that Homebrew already requires). Because the app is
+built locally, Gatekeeper has no objections to the unsigned bundle.
+
+Quit it any time from the menu bar icon → **Quit mole-widget**.
+
+### From source
 
 ```bash
 make app
