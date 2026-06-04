@@ -27,7 +27,7 @@ public struct WidgetRootView: View {
 
             Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 16) {
                 GridRow {
-                    CPUSectionView(snapshot: store.cpu)
+                    CPUSectionView(snapshot: store.cpu, history: store.cpuHistory.values)
                         .frame(width: columnWidth, alignment: .topLeading)
                     MemorySectionView(snapshot: store.memory)
                         .frame(width: columnWidth, alignment: .topLeading)
@@ -39,8 +39,13 @@ public struct WidgetRootView: View {
                         .frame(width: columnWidth, alignment: .topLeading)
                 }
                 GridRow {
-                    NetworkSectionView(rates: store.netRates, info: store.networkInfo)
-                        .frame(width: columnWidth, alignment: .topLeading)
+                    NetworkSectionView(
+                        rates: store.netRates,
+                        info: store.networkInfo,
+                        downloadHistory: store.netInHistory.values,
+                        uploadHistory: store.netOutHistory.values
+                    )
+                    .frame(width: columnWidth, alignment: .topLeading)
                     ProcessesSectionView(processes: store.topProcesses)
                         .frame(width: columnWidth, alignment: .topLeading)
                 }

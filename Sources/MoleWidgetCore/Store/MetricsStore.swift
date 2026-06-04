@@ -16,6 +16,9 @@ public final class MetricsStore {
     public private(set) var topProcesses: [ProcessUsage] = []
     public private(set) var systemInfo: SystemInfoSnapshot?
     public private(set) var healthScore: Int = 100
+    public private(set) var cpuHistory = History()
+    public private(set) var netInHistory = History()
+    public private(set) var netOutHistory = History()
 
     @ObservationIgnored private let cpuCollector = CPUCollector()
     @ObservationIgnored private let memoryCollector = MemoryCollector()
@@ -71,6 +74,9 @@ public final class MetricsStore {
                     current: ticks,
                     loadAverage: cpuCollector.loadAverage()
                 )
+                if let snapshot = cpu {
+                    cpuHistory.push(snapshot.totalUsage)
+                }
             }
             previousCPU = ticks
         }
@@ -93,11 +99,14 @@ public final class MetricsStore {
         if let counters = networkCollector.ioCounters() {
             let now = Date()
             if let prev = previousNetIO {
-                netRates = NetIO.rates(
+                let rates = NetIO.rates(
                     previous: prev.counters,
                     current: counters,
                     interval: now.timeIntervalSince(prev.at)
                 )
+                netRates = rates
+                netInHistory.push(rates.download)
+                netOutHistory.push(rates.upload)
             }
             previousNetIO = (counters, now)
         } else {

@@ -81,3 +81,24 @@ struct TextRow: View {
         }
     }
 }
+
+/// Row with a label, a sparkline of recent history, and a trailing value.
+struct SparkRow: View {
+    let label: String
+    let values: [Double]
+    let value: String
+    let color: Color
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .foregroundStyle(Theme.text)
+                .frame(width: 56, alignment: .leading)
+            SparklineView(values: values, color: color)
+            Text(value)
+                .foregroundStyle(Theme.text)
+                .fixedSize()
+                .frame(minWidth: 56, alignment: .trailing)
+        }
+    }
+}

@@ -2,9 +2,11 @@ import SwiftUI
 
 public struct CPUSectionView: View {
     let snapshot: CPUSnapshot?
+    let history: [Double]
 
-    public init(snapshot: CPUSnapshot?) {
+    public init(snapshot: CPUSnapshot?, history: [Double]) {
         self.snapshot = snapshot
+        self.history = history
     }
 
     public var body: some View {
@@ -27,6 +29,12 @@ public struct CPUSectionView: View {
                             s.loadAverage[0], s.loadAverage[1], s.loadAverage[2]
                         )
                     )
+                }
+                HStack(spacing: 8) {
+                    Text("Trend")
+                        .foregroundStyle(Theme.text)
+                        .frame(width: 56, alignment: .leading)
+                    SparklineView(values: history, color: Theme.accent)
                 }
             } else {
                 Text("No data").foregroundStyle(Theme.dim)
@@ -92,10 +100,14 @@ public struct DiskSectionView: View {
 public struct NetworkSectionView: View {
     let rates: NetIORates?
     let info: NetworkInfo?
+    let downloadHistory: [Double]
+    let uploadHistory: [Double]
 
-    public init(rates: NetIORates?, info: NetworkInfo?) {
+    public init(rates: NetIORates?, info: NetworkInfo?, downloadHistory: [Double] = [], uploadHistory: [Double] = []) {
         self.rates = rates
         self.info = info
+        self.downloadHistory = downloadHistory
+        self.uploadHistory = uploadHistory
     }
 
     public var body: some View {
@@ -104,8 +116,8 @@ public struct NetworkSectionView: View {
                 Text("No data").foregroundStyle(Theme.dim)
             } else {
                 if let r = rates {
-                    TextRow(label: "Down", value: Fmt.rate(r.download))
-                    TextRow(label: "Up", value: Fmt.rate(r.upload))
+                    SparkRow(label: "Down", values: downloadHistory, value: Fmt.rate(r.download), color: Theme.accent)
+                    SparkRow(label: "Up", values: uploadHistory, value: Fmt.rate(r.upload), color: Theme.header)
                 }
                 if let i = info {
                     TextRow(label: "Iface", value: ifaceString(i))
