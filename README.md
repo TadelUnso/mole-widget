@@ -73,6 +73,13 @@ brew untap bsnkhua/tap
 defaults delete com.sbezbabnykh.mole-widget
 ```
 
+> Uninstalled while the widget was still running? The orphaned process keeps
+> the widget on screen — quit it with:
+>
+> ```bash
+> pkill -f "Mole Widget"
+> ```
+
 ## Development
 
 ```bash
