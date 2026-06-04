@@ -27,8 +27,30 @@ struct MoleWidgetApp: App {
     @AppStorage(WidgetSettings.showNetworkKey)   private var showNetwork   = true
     @AppStorage(WidgetSettings.showProcessesKey) private var showProcesses = true
 
+    /// Monochrome template glyph echoing the app icon: four bars of varying
+    /// length. Template images get tinted by macOS for light/dark menu bars.
+    private static let menuBarIcon: NSImage = {
+        let size = NSSize(width: 18, height: 16)
+        let image = NSImage(size: size, flipped: false) { _ in
+            NSColor.black.setFill()
+            let barHeight: CGFloat = 2.6
+            let gap: CGFloat = 1.1
+            // Bar lengths mirror the app icon proportions (560/360/470/220)
+            let widths: [CGFloat] = [14, 9, 11.8, 5.5]
+            var y: CGFloat = size.height - barHeight - 0.6
+            for width in widths {
+                let bar = NSRect(x: 2, y: y, width: width, height: barHeight)
+                NSBezierPath(roundedRect: bar, xRadius: barHeight / 2, yRadius: barHeight / 2).fill()
+                y -= barHeight + gap
+            }
+            return true
+        }
+        image.isTemplate = true
+        return image
+    }()
+
     var body: some Scene {
-        MenuBarExtra("Mole Widget", systemImage: "chart.bar.fill") {
+        MenuBarExtra {
             Toggle("Lock position", isOn: $positionLocked)
             LaunchAtLoginToggle()
             Menu("Settings") {
@@ -64,6 +86,8 @@ struct MoleWidgetApp: App {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q")
+        } label: {
+            Image(nsImage: Self.menuBarIcon)
         }
     }
 }
