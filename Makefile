@@ -23,6 +23,8 @@ app:
 	mkdir -p "$(DIST)/Contents/MacOS"
 	cp .build/release/MoleWidget "$(DIST)/Contents/MacOS/MoleWidget"
 	cp Resources/Info.plist "$(DIST)/Contents/Info.plist"
+	mkdir -p "$(DIST)/Contents/Resources"
+	cp Resources/AppIcon.icns "$(DIST)/Contents/Resources/AppIcon.icns"
 	codesign --force --sign - "$(DIST)"
 	@echo "Done: $(DIST)"
 
