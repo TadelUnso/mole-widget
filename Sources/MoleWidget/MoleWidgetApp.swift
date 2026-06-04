@@ -9,6 +9,8 @@ struct MoleWidgetApp: App {
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
 
     // Settings: opacity
+    // NOTE: write only via the Picker binding — the tags are exact Double
+    // literals; arithmetic writes would break Picker selection matching.
     @AppStorage(WidgetSettings.backgroundOpacityKey)
     private var backgroundOpacity = WidgetSettings.defaultOpacity
 
@@ -173,6 +175,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         window.orderFrontRegardless()
         self.window = window
+
+        // Reconcile the stored width with the actual frame once at startup:
+        // without this, a missing autosave entry (fresh install, cleared
+        // defaults) would leave the window at fittingSize and ignore
+        // widgetWidthKey until the user touches a setting.
+        syncWindowSize()
 
         // UserDefaults changes drive two things:
         // 1. Width/height sync so the window envelope tracks SwiftUI content size.

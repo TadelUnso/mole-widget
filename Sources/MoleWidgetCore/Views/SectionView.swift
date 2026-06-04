@@ -33,7 +33,11 @@ public struct SectionView<Content: View>: View {
 
     static func openActivityMonitor() {
         let url = URL(fileURLWithPath: "/System/Applications/Utilities/Activity Monitor.app")
-        NSWorkspace.shared.openApplication(at: url, configuration: .init(), completionHandler: nil)
+        NSWorkspace.shared.openApplication(at: url, configuration: .init()) { _, error in
+            if let error {
+                NSLog("mole-widget: failed to open Activity Monitor: \(error.localizedDescription)")
+            }
+        }
     }
 }
 

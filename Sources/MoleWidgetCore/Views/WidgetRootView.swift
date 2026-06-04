@@ -76,10 +76,11 @@ public struct WidgetRootView: View {
                 if !enabledSections.isEmpty {
                     Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 16) {
                         // Chunk the enabled sections into pairs; the odd tail sits alone.
+                        // Row identity = leading section, so rows keep stable identity
+                        // when other sections are toggled on/off.
                         let pairs = enabledSections.chunks(of: 2)
-                        ForEach(pairs.indices, id: \.self) { rowIndex in
+                        ForEach(pairs, id: \.[0].id) { pair in
                             GridRow {
-                                let pair = pairs[rowIndex]
                                 // Leading cell (always present)
                                 sectionView(for: pair[0])
                                     .frame(width: columnWidth, alignment: .topLeading)
