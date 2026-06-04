@@ -2,20 +2,8 @@
 
 A native macOS desktop widget showing live system metrics in the terminal aesthetic of the `mo status` CLI (mole): a borderless window living at desktop level — above the wallpaper, below application windows.
 
-```
-◉ CPU ························   ▥ Memory ····················
-Total  ███░░░░░░░░░░░░   5.5%    Used   ███████░░░░░░   60.8%
-Core1  █████░░░░░░░░░░  25.4%    Free   ████░░░░░░░░░   39.2%
-Core2  ████░░░░░░░░░░░  17.8%    Total  9.7 GB / 16.0 GB
-Core3  ██░░░░░░░░░░░░░   8.1%    Cached 3.7 GB
-Load   1.61 / 1.72 / 1.67       Avail  4.4 GB
+<img src="assets/widget.webp" width="520" alt="Mole Widget on the desktop">
 
-▦ Disk ·······················   ◪ Power ·····················
-Usage  ██████░░░░░░░░░  38.1%    Level  ██████████████  100.0%
-Total  460.4 GB · APFS           Health ██████████████  100.0%
-Space  175G used · 285G free     Status Discharging · 14:15
-Speed  R 0.0 · W 0.0 MB/s        Battery 3 cycles · 30.4°C
-```
 
 ## Features
 
