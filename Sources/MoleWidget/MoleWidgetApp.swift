@@ -51,6 +51,10 @@ struct MoleWidgetApp: App {
 
     var body: some Scene {
         MenuBarExtra {
+            Button("Mole Widget v\(CoreInfo.version) — GitHub") {
+                NSWorkspace.shared.open(UpdateChecker.repoPageURL)
+            }
+            Divider()
             Toggle("Lock position", isOn: $positionLocked)
             LaunchAtLoginToggle()
             Menu("Settings") {

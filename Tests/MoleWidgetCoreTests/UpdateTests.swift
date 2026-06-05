@@ -43,4 +43,8 @@ import Testing
         #expect(UpdateChecker.parseTag(fromJSON: Data("not json".utf8)) == nil)
         #expect(UpdateChecker.parseTag(fromJSON: Data("{}".utf8)) == nil)
     }
+
+    @Test func repoPageURL() {
+        #expect(UpdateChecker.repoPageURL.absoluteString == "https://github.com/bsnkhua/mole-widget")
+    }
 }

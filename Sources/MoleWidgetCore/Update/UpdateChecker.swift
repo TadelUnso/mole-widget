@@ -4,6 +4,7 @@ import Foundation
 /// any failure (offline, rate limit) quietly returns nil.
 public struct UpdateChecker {
     public static let releasesPageURL = URL(string: "https://github.com/bsnkhua/mole-widget/releases")!
+    public static let repoPageURL = URL(string: "https://github.com/bsnkhua/mole-widget")!
 
     private static let latestReleaseAPI =
         URL(string: "https://api.github.com/repos/bsnkhua/mole-widget/releases/latest")!
