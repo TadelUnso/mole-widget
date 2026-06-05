@@ -12,9 +12,10 @@ enum WidgetSection: Int, CaseIterable, Identifiable {
 
 // MARK: - WidgetRootView
 
-/// Root widget view: a dynamic grid of sections on a dark backdrop,
-/// a clickable lock icon in the top-right corner, and an invisible
-/// resize handle along the right edge (drag to adjust width).
+/// Root widget view: an always-visible title bar (app glyph + name on the
+/// left, update/lock controls on the right), a dynamic grid of sections on
+/// a dark backdrop, and an invisible resize handle along the right edge
+/// (drag to adjust width).
 public struct WidgetRootView: View {
     let store: MetricsStore
 
@@ -63,6 +64,7 @@ public struct WidgetRootView: View {
         let allHidden = !showHeader && enabledSections.isEmpty
 
         VStack(alignment: .leading, spacing: 12) {
+            titleBar
             if allHidden {
                 Text("All sections hidden")
                     .foregroundStyle(Theme.dim)
@@ -108,14 +110,26 @@ public struct WidgetRootView: View {
         .overlay(alignment: .trailing) {
             resizeHandle
         }
-        .overlay(alignment: .topTrailing) {
+    }
+
+    // MARK: - Title bar
+
+    /// Always-visible first row: app glyph + name on the left,
+    /// update (when available) and lock controls on the right.
+    /// Permanent home of the lock — visible even when all sections are hidden.
+    private var titleBar: some View {
+        HStack(spacing: 6) {
+            TitleGlyphView()
+            Text("Mole Widget")
+                .fontWeight(.bold)
+                .foregroundStyle(Theme.header)
+            Spacer()
             HStack(spacing: 2) {
                 if let version = store.availableUpdate {
                     updateButton(version: version)
                 }
                 lockButton
             }
-            .padding(6)
         }
     }
 
