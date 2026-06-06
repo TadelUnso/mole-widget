@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest an improvement, a new metric, or a new section
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the use case or annoyance this addresses.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Optional — how you imagine it working.

@@ -89,11 +89,17 @@ defaults delete com.sbezbabnykh.mole-widget
 > pkill -f "Mole Widget"
 > ```
 
+## Feedback
+
+Found a bug or have an idea? [Open an issue](https://github.com/bsnkhua/mole-widget/issues) —
+bug reports and feature requests are both welcome. The widget's menu bar icon also has a
+**Report an Issue** shortcut.
+
 ## Development
 
 ```bash
 make run    # run a dev build
-make test   # run the test suite (79 tests)
+make test   # run the test suite (80 tests)
 ```
 
 > **Important:** run tests only via `make test`. On a machine without full Xcode
