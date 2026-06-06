@@ -1,7 +1,10 @@
 # Mole Widget
 
 [![CI](https://github.com/bsnkhua/mole-widget/actions/workflows/ci.yml/badge.svg)](https://github.com/bsnkhua/mole-widget/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/bsnkhua/mole-widget)](https://github.com/bsnkhua/mole-widget/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Mentioned in Awesome Mac](https://awesome.re/mentioned-badge.svg)](https://github.com/jaywcjlove/awesome-mac)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/bsnkhua)
 
 **Mole Widget** is a lightweight macOS desktop system monitor widget: live CPU, memory, disk, network, battery and process metrics right on your desktop. Native Swift + SwiftUI in the terminal aesthetic of the `mo status` CLI (mole) — a borderless window living at desktop level, above the wallpaper and below application windows.
 
