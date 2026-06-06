@@ -5,6 +5,7 @@ import Foundation
 public struct UpdateChecker {
     public static let releasesPageURL = URL(string: "https://github.com/bsnkhua/mole-widget/releases")!
     public static let repoPageURL = URL(string: "https://github.com/bsnkhua/mole-widget")!
+    public static let issuesPageURL = URL(string: "https://github.com/bsnkhua/mole-widget/issues")!
 
     private static let latestReleaseAPI =
         URL(string: "https://api.github.com/repos/bsnkhua/mole-widget/releases/latest")!

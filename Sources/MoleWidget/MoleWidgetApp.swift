@@ -54,6 +54,9 @@ struct MoleWidgetApp: App {
             Button("Mole Widget v\(CoreInfo.version) — GitHub") {
                 NSWorkspace.shared.open(UpdateChecker.repoPageURL)
             }
+            Button("Report an Issue") {
+                NSWorkspace.shared.open(UpdateChecker.issuesPageURL)
+            }
             Divider()
             Toggle("Lock position", isOn: $positionLocked)
             LaunchAtLoginToggle()
