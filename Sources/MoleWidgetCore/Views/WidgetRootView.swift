@@ -259,6 +259,7 @@ private struct WidgetBackground: ViewModifier {
     let opacity: Double
 
     func body(content: Content) -> some View {
+        #if swift(>=6.3)
         if #available(macOS 26, *) {
             content
                 .background(Color.black.opacity(0.30), in: RoundedRectangle(cornerRadius: 12))
@@ -270,6 +271,13 @@ private struct WidgetBackground: ViewModifier {
                     in: RoundedRectangle(cornerRadius: 12)
                 )
         }
+        #else
+        content
+            .background(
+                Theme.background.opacity(WidgetSettings.clampOpacity(opacity)),
+                in: RoundedRectangle(cornerRadius: 12)
+            )
+        #endif
     }
 }
 
