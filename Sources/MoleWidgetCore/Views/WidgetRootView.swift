@@ -10,6 +10,34 @@ enum WidgetSection: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
 }
 
+// MARK: - Size presets
+
+/// One-tap presets that set the visible section mix.
+/// nil activePreset means the user has a custom selection that matches none of the three.
+private enum SizePreset: CaseIterable {
+    case small, medium, large
+
+    var sections: Set<WidgetSection> {
+        switch self {
+        case .small:  return [.cpu, .memory]
+        case .medium: return [.cpu, .memory, .disk, .power]
+        case .large:  return Set(WidgetSection.allCases)
+        }
+    }
+
+    var label: String {
+        switch self { case .small: "S"; case .medium: "M"; case .large: "L" }
+    }
+
+    var helpText: String {
+        switch self {
+        case .small:  return "Small — CPU & Memory"
+        case .medium: return "Medium — CPU, Memory, Disk & Power"
+        case .large:  return "Large — all sections"
+        }
+    }
+}
+
 // MARK: - WidgetRootView
 
 /// Root widget view: an always-visible title bar (app glyph + name on the
@@ -54,6 +82,30 @@ public struct WidgetRootView: View {
             case .processes: return showProcesses
             }
         }
+    }
+
+    /// nil when the current section mix doesn't match any preset.
+    private var activePreset: SizePreset? {
+        let current = Set(WidgetSection.allCases.filter { section in
+            switch section {
+            case .cpu:       return showCPU
+            case .memory:    return showMemory
+            case .disk:      return showDisk
+            case .power:     return showPower
+            case .network:   return showNetwork
+            case .processes: return showProcesses
+            }
+        })
+        return SizePreset.allCases.first { $0.sections == current }
+    }
+
+    private func applyPreset(_ preset: SizePreset) {
+        showCPU       = preset.sections.contains(.cpu)
+        showMemory    = preset.sections.contains(.memory)
+        showDisk      = preset.sections.contains(.disk)
+        showPower     = preset.sections.contains(.power)
+        showNetwork   = preset.sections.contains(.network)
+        showProcesses = preset.sections.contains(.processes)
     }
 
     public init(store: MetricsStore) {
@@ -125,6 +177,7 @@ public struct WidgetRootView: View {
                 if let version = store.availableUpdate {
                     updateButton(version: version)
                 }
+                sizeButtons
                 lockButton
             }
         }
@@ -215,6 +268,24 @@ public struct WidgetRootView: View {
                     }
                     .onEnded { _ in dragStartWidth = nil }
             )
+    }
+
+    // MARK: - Size preset buttons
+
+    private var sizeButtons: some View {
+        HStack(spacing: 0) {
+            ForEach(SizePreset.allCases, id: \.label) { preset in
+                Button { applyPreset(preset) } label: {
+                    Text(preset.label)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(activePreset == preset ? Theme.header : Theme.dim)
+                        .frame(width: 16, height: 20)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help(preset.helpText)
+            }
+        }
     }
 
     // MARK: - Lock button
