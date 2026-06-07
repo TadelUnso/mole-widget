@@ -103,10 +103,7 @@ public struct WidgetRootView: View {
         }
         .font(Theme.font)
         .padding(16)
-        .background(
-            Theme.background.opacity(WidgetSettings.clampOpacity(backgroundOpacity)),
-            in: RoundedRectangle(cornerRadius: 12)
-        )
+        .modifier(WidgetBackground(opacity: backgroundOpacity))
         .overlay(alignment: .trailing) {
             resizeHandle
         }
@@ -236,6 +233,43 @@ public struct WidgetRootView: View {
         .help(positionLocked
             ? "Position and size are locked — click to unlock"
             : "Click to lock the widget position and size")
+    }
+}
+
+// MARK: - Background
+
+/// NSVisualEffectView wrapper — gives the same frosted-glass material native desktop
+/// widgets use (.hudWindow + behindWindow blending). Stays active regardless of
+/// window focus since the widget never becomes key.
+private struct FrostView: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let v = NSVisualEffectView()
+        v.material = .sidebar
+        v.blendingMode = .behindWindow
+        v.state = .active
+        v.appearance = NSAppearance(named: .darkAqua)
+        return v
+    }
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
+/// On macOS 26+ uses NSVisualEffectView (.hudWindow) to match native Tahoe widget
+/// appearance; falls back to the opaque dark panel on earlier systems.
+private struct WidgetBackground: ViewModifier {
+    let opacity: Double
+
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content
+                .background(Color.black.opacity(0.30), in: RoundedRectangle(cornerRadius: 12))
+                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+        } else {
+            content
+                .background(
+                    Theme.background.opacity(WidgetSettings.clampOpacity(opacity)),
+                    in: RoundedRectangle(cornerRadius: 12)
+                )
+        }
     }
 }
 

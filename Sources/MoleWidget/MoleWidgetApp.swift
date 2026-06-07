@@ -61,11 +61,13 @@ struct MoleWidgetApp: App {
             Toggle("Lock position", isOn: $positionLocked)
             LaunchAtLoginToggle()
             Menu("Settings") {
-                Picker("Opacity", selection: $backgroundOpacity) {
-                    Text("100%").tag(1.0)
-                    Text("92%").tag(0.92)
-                    Text("85%").tag(0.85)
-                    Text("70%").tag(0.7)
+                if #unavailable(macOS 26) {
+                    Picker("Opacity", selection: $backgroundOpacity) {
+                        Text("100%").tag(1.0)
+                        Text("92%").tag(0.92)
+                        Text("85%").tag(0.85)
+                        Text("70%").tag(0.7)
+                    }
                 }
                 Picker("Refresh rate", selection: $refreshInterval) {
                     Text("1 s").tag(1.0)
