@@ -35,6 +35,12 @@
 
 ## Install
 
+### Direct download
+
+Download the latest `MoleWidget.dmg` from the [Releases page](https://github.com/bsnkhua/mole-widget/releases), open it, drag **Mole Widget** into Applications, and launch it from there.
+
+The app is signed and notarized — Gatekeeper will not block it.
+
 ### Homebrew
 
 ```bash
