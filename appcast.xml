@@ -1,11 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Sparkle update feed. The Release workflow overwrites this file on every
-     tagged release with a signed <item> for the new version. -->
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
     <channel>
         <title>Mole Widget</title>
         <link>https://github.com/bsnkhua/mole-widget</link>
         <description>System monitor desktop widget for macOS</description>
         <language>en</language>
+        <item>
+            <title>Mole Widget 0.6.0</title>
+            <pubDate>Mon, 08 Jun 2026 12:08:46 +0000</pubDate>
+            <sparkle:version>13</sparkle:version>
+            <sparkle:shortVersionString>0.6.0</sparkle:shortVersionString>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <enclosure
+                url="https://github.com/bsnkhua/mole-widget/releases/download/v0.6.0/MoleWidget.dmg"
+                length="1616865"
+                type="application/octet-stream"
+                sparkle:edSignature="+/+4RwvXOYG8pE+vOrY9CmoSKrt0r5pJiSmcLeKBL+qA7Xs41kYyEMHAtYHimCWAosACQaGwpaJbDxp/aKqnBg=="
+            />
+        </item>
     </channel>
 </rss>
