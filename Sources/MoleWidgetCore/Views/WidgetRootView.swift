@@ -48,6 +48,7 @@ public struct WidgetRootView: View {
     let store: MetricsStore
 
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
+    @AppStorage(WidgetSettings.widgetVisibleKey) private var widgetVisible = true
     @AppStorage(WidgetSettings.widgetWidthKey) private var widgetWidth = WidgetSettings.defaultWidth
 
     // Appearance
@@ -178,6 +179,7 @@ public struct WidgetRootView: View {
                 HStack(spacing: 2) {
                     sizeButtons
                     lockButton
+                    hideButton
                 }
             }
         }
@@ -271,6 +273,22 @@ public struct WidgetRootView: View {
         .help(positionLocked
             ? "Position and size are locked — click to unlock"
             : "Click to lock the widget position and size")
+    }
+
+    // MARK: - Hide button
+
+    private var hideButton: some View {
+        Button {
+            widgetVisible = false
+        } label: {
+            Image(systemName: "eye.slash")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.dim)
+                .frame(width: 20, height: 20) // hit area slightly larger than the icon
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Hide widget — bring it back from the menu bar icon")
     }
 }
 
