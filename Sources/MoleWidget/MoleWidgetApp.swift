@@ -8,6 +8,7 @@ import SwiftUI
 struct MoleWidgetApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
+    @AppStorage(WidgetSettings.widgetVisibleKey) private var widgetVisible = true
 
     // Settings: opacity
     // NOTE: write only via the Picker binding — the tags are exact Double
@@ -64,6 +65,7 @@ struct MoleWidgetApp: App {
             .disabled(!appDelegate.updaterController.updater.canCheckForUpdates)
             Divider()
             Toggle("Lock position", isOn: $positionLocked)
+            Toggle("Show on desktop", isOn: $widgetVisible)
             LaunchAtLoginToggle()
             Menu("Settings") {
                 if #unavailable(macOS 26) {
@@ -220,8 +222,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         window.center()
         window.setFrameAutosaveName("MoleWidgetWindow")
 
-        window.orderFrontRegardless()
         self.window = window
+        if WidgetSettings.isVisible(in: .standard) {
+            window.orderFrontRegardless()
+        } else {
+            // Launched hidden: pause fast polling until summoned. The slow
+            // disk/power timers still tick, same as when the widget is occluded.
+            store.suspend()
+        }
 
         // Pause fast polling when the widget is fully hidden behind other windows.
         NotificationCenter.default.addObserver(
@@ -256,6 +264,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             MainActor.assumeIsolated {
                 self?.syncWindowSize()
                 self?.restartStoreIfIntervalChanged()
+                self?.reconcileVisibility()
             }
         }
     }
@@ -300,6 +309,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard current != lastRefreshInterval else { return }
         lastRefreshInterval = current
         store.start()
+    }
+
+    /// Shows or hides the desktop window to match the stored visibility flag.
+    /// Idempotent: it compares against the window's current on-screen state so
+    /// unrelated UserDefaults changes don't re-order the window.
+    private func reconcileVisibility() {
+        guard let window else { return }
+        let shouldBeVisible = WidgetSettings.isVisible(in: .standard)
+        if shouldBeVisible, !window.isVisible {
+            window.orderFrontRegardless()
+            store.resume()
+        } else if !shouldBeVisible, window.isVisible {
+            window.orderOut(nil)
+            store.suspend()
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
