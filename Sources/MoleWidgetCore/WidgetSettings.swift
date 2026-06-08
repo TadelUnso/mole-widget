@@ -49,7 +49,7 @@ public enum WidgetSettings {
     /// Whether the widget window is shown on the desktop. Hiding it keeps the
     /// app and its menu bar icon running so the widget can be summoned again.
     public static let widgetVisibleKey = "widgetVisible"
-    public static let defaultVisible = true
+    public static let defaultVisible: Bool = true
 
     /// Resolves desktop visibility from the given defaults. An absent key reads
     /// as `defaultVisible` (visible); `UserDefaults.bool(forKey:)` on its own

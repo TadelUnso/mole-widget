@@ -226,7 +226,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if WidgetSettings.isVisible(in: .standard) {
             window.orderFrontRegardless()
         } else {
-            // Launched hidden: keep the window off-screen and idle until summoned.
+            // Launched hidden: pause fast polling until summoned. The slow
+            // disk/power timers still tick, same as when the widget is occluded.
             store.suspend()
         }
 
