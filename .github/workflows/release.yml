@@ -138,7 +138,7 @@ jobs:
           </rss>
           EOF
 
-          git config user.email "bsnkhua@gmail.com"
+          git config user.email "tadelunso@gmail.com"
           git config user.name "Serhii Bezbabnykh"
           git add appcast.xml
           git commit -m "chore: update appcast.xml for ${TAG}"
