@@ -206,10 +206,8 @@ private struct MenuBarLabel: View {
         let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
             var x: CGFloat = 0
             for cell in cells {
-                let labelX = x + (cell.width - cell.label.size().width) / 2
-                let valueX = x + (cell.width - cell.value.size().width) / 2
-                cell.value.draw(at: NSPoint(x: valueX, y: valueY))
-                cell.label.draw(at: NSPoint(x: labelX, y: labelY))
+                cell.value.draw(at: NSPoint(x: x, y: valueY))
+                cell.label.draw(at: NSPoint(x: x, y: labelY))
                 x += cell.width + columnGap
             }
             return true
