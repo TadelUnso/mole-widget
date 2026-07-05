@@ -187,12 +187,19 @@ private struct MenuBarLabel: View {
     private static func image(for metrics: [MenuBarMetric]) -> NSImage {
         let labelFont = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
         let valueFont = NSFont.monospacedSystemFont(ofSize: 14, weight: .semibold)
-        let labelAttrs: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: NSColor.black]
-        let valueAttrs: [NSAttributedString.Key: Any] = [.font: valueFont, .foregroundColor: NSColor.black]
+        // labelColor adapts to the menu bar's light/dark appearance; warning
+        // and danger values pop in yellow/red on both.
+        let labelAttrs: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: NSColor.labelColor]
 
         let cells = metrics.map { metric -> (label: NSAttributedString, value: NSAttributedString, width: CGFloat) in
+            let valueColor: NSColor
+            switch metric.level {
+            case .normal:  valueColor = .labelColor
+            case .warning: valueColor = .systemYellow
+            case .danger:  valueColor = .systemRed
+            }
             let label = NSAttributedString(string: metric.label, attributes: labelAttrs)
-            let value = NSAttributedString(string: metric.value, attributes: valueAttrs)
+            let value = NSAttributedString(string: metric.value, attributes: [.font: valueFont, .foregroundColor: valueColor])
             return (label, value, ceil(max(label.size().width, value.size().width)))
         }
 
@@ -204,15 +211,20 @@ private struct MenuBarLabel: View {
         let labelY = valueFont.capHeight + rowGap + labelFont.descender
 
         let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
-            var x: CGFloat = 0
-            for cell in cells {
-                cell.value.draw(at: NSPoint(x: x, y: valueY))
-                cell.label.draw(at: NSPoint(x: x, y: labelY))
-                x += cell.width + columnGap
+            // Resolve labelColor against the menu bar's appearance, not the app's.
+            NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+                var x: CGFloat = 0
+                for cell in cells {
+                    cell.value.draw(at: NSPoint(x: x, y: valueY))
+                    cell.label.draw(at: NSPoint(x: x, y: labelY))
+                    x += cell.width + columnGap
+                }
             }
             return true
         }
-        image.isTemplate = true
+        // Not a template: template images are forced monochrome, which would
+        // discard the yellow/red value colors.
+        image.isTemplate = false
 
         // Scale the whole image down to the menu bar thickness so both rows stay
         // fully visible instead of the top one being clipped by the bar.
