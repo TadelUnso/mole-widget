@@ -3,16 +3,25 @@ import SwiftUI
 public struct CPUSectionView: View, Equatable {
     let snapshot: CPUSnapshot?
     let history: [Double]
+    let temperature: Double?
 
-    public init(snapshot: CPUSnapshot?, history: [Double]) {
+    public init(snapshot: CPUSnapshot?, history: [Double], temperature: Double?) {
         self.snapshot = snapshot
         self.history = history
+        self.temperature = temperature
     }
 
     public var body: some View {
         SectionView(icon: "◉", title: "CPU") {
             if let s = snapshot {
                 MetricRow(label: "Total", fraction: s.totalUsage, value: Fmt.percent(s.totalUsage))
+                if let temperature {
+                    MetricRow(
+                        label: "Temp",
+                        fraction: temperature / 100,
+                        value: String(format: "%.0f°C", temperature)
+                    )
+                }
                 ForEach(s.topCores, id: \.index) { core in
                     MetricRow(
                         label: "Core\(core.index + 1)",
@@ -195,11 +204,24 @@ public struct ProcessesSectionView: View, Equatable {
         self.processes = processes
     }
 
+    private let cpuColumnWidth: CGFloat = 44
+    private let memColumnWidth: CGFloat = 52
+
     public var body: some View {
         SectionView(icon: "≡", title: "Processes") {
             if processes.isEmpty {
                 Text("No data").foregroundStyle(Theme.dim)
             } else {
+                // Column headers so the two independent metrics are labeled.
+                HStack(spacing: 8) {
+                    Spacer(minLength: 8)
+                    Text("CPU")
+                        .frame(width: cpuColumnWidth, alignment: .trailing)
+                    Text("RAM")
+                        .frame(width: memColumnWidth, alignment: .trailing)
+                }
+                .foregroundStyle(Theme.dim)
+
                 ForEach(processes.prefix(3), id: \.pid) { p in
                     // Process names vary wildly in length; give the name the
                     // flexible space and let SwiftUI truncate with "…" —
@@ -210,19 +232,18 @@ public struct ProcessesSectionView: View, Equatable {
                             .lineLimit(1)
                             .truncationMode(.tail)
                         Spacer(minLength: 8)
-                        Text(valueString(p))
+                        Text(String(format: "%.0f%%", p.cpuFraction * 100))
                             .foregroundStyle(Theme.text)
-                            .lineLimit(1)
-                            .fixedSize()
+                            .monospacedDigit()
+                            .frame(width: cpuColumnWidth, alignment: .trailing)
+                        Text(Fmt.memoryCompact(p.memoryBytes))
+                            .foregroundStyle(Theme.text)
+                            .monospacedDigit()
+                            .frame(width: memColumnWidth, alignment: .trailing)
                     }
                 }
             }
         }
     }
 
-    private func valueString(_ p: ProcessUsage) -> String {
-        let cpuPct = String(format: "%.0f%%", p.cpuFraction * 100)
-        let memGb = String(format: "%.1fG", Double(p.memoryBytes) / 1_073_741_824.0)
-        return "\(cpuPct) · \(memGb)"
-    }
 }

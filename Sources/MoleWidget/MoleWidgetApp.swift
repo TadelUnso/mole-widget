@@ -20,6 +20,19 @@ struct MoleWidgetApp: App {
     @AppStorage(WidgetSettings.refreshIntervalKey)
     private var refreshInterval = WidgetSettings.defaultRefreshInterval
 
+    // Settings: font
+    // NOTE: font-size tags are exact Double literals — same Picker matching
+    // constraint as opacity above.
+    @AppStorage(WidgetSettings.fontSizeKey)
+    private var fontSize = WidgetSettings.defaultFontSize
+    @AppStorage(WidgetSettings.fontStyleKey)
+    private var fontStyle = WidgetSettings.defaultFontStyle.rawValue
+
+    // Settings: menu bar metrics
+    @AppStorage(WidgetSettings.menuBarShowCPUKey)    private var menuBarShowCPU    = WidgetSettings.defaultMenuBarShowCPU
+    @AppStorage(WidgetSettings.menuBarShowMemoryKey) private var menuBarShowMemory = WidgetSettings.defaultMenuBarShowMemory
+    @AppStorage(WidgetSettings.menuBarShowTempKey)   private var menuBarShowTemp   = WidgetSettings.defaultMenuBarShowTemp
+
     // Settings: section visibility
     @AppStorage(WidgetSettings.showHeaderKey)    private var showHeader    = true
     @AppStorage(WidgetSettings.showCPUKey)       private var showCPU       = true
@@ -64,6 +77,7 @@ struct MoleWidgetApp: App {
             }
             .disabled(!appDelegate.updaterController.updater.canCheckForUpdates)
             Divider()
+            OpenUsageHistoryButton()
             Toggle("Lock position", isOn: $positionLocked)
             Toggle("Show on desktop", isOn: $widgetVisible)
             LaunchAtLoginToggle()
@@ -81,6 +95,21 @@ struct MoleWidgetApp: App {
                     Text("2 s").tag(2.0)
                     Text("5 s").tag(5.0)
                 }
+                Picker("Font size", selection: $fontSize) {
+                    Text("Small").tag(11.0)
+                    Text("Medium").tag(12.0)
+                    Text("Large").tag(14.0)
+                    Text("Extra Large").tag(16.0)
+                }
+                Picker("Font style", selection: $fontStyle) {
+                    Text("Monospaced").tag(WidgetSettings.FontStyle.monospaced.rawValue)
+                    Text("System").tag(WidgetSettings.FontStyle.system.rawValue)
+                }
+                Menu("Menu bar metrics") {
+                    Toggle("CPU",     isOn: $menuBarShowCPU)
+                    Toggle("Memory",  isOn: $menuBarShowMemory)
+                    Toggle("CPU temperature", isOn: $menuBarShowTemp)
+                }
                 Menu("Sections") {
                     Toggle("Header",    isOn: $showHeader)
                     Toggle("CPU",       isOn: $showCPU)
@@ -97,8 +126,113 @@ struct MoleWidgetApp: App {
             }
             .keyboardShortcut("q")
         } label: {
-            Image(nsImage: Self.menuBarIcon)
+            MenuBarLabel(store: appDelegate.store, icon: Self.menuBarIcon)
         }
+
+        Window("Usage History", id: "usage-history") {
+            UsageHistoryView(history: appDelegate.usageHistory)
+        }
+        .defaultSize(width: 640, height: 420)
+    }
+}
+
+/// Opens the Usage History window. Lives in its own view so it can read the
+/// `openWindow` environment action (unavailable directly in the App struct).
+/// The app is `.accessory`, so it must activate to bring the window forward.
+private struct OpenUsageHistoryButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Usage History…") {
+            openWindow(id: "usage-history")
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+}
+
+/// Menu bar label: shows live metric text when any metric toggle is on and
+/// data is available, otherwise the static template icon. Reading the
+/// `@Observable` store's properties in `body` subscribes this view to the
+/// fast-timer updates, so the text refreshes on every sample.
+private struct MenuBarLabel: View {
+    let store: MetricsStore
+    let icon: NSImage
+
+    @AppStorage(WidgetSettings.menuBarShowCPUKey)    private var showCPU    = WidgetSettings.defaultMenuBarShowCPU
+    @AppStorage(WidgetSettings.menuBarShowMemoryKey) private var showMemory = WidgetSettings.defaultMenuBarShowMemory
+    @AppStorage(WidgetSettings.menuBarShowTempKey)   private var showTemp   = WidgetSettings.defaultMenuBarShowTemp
+
+    var body: some View {
+        let metrics = MenuBarText.metrics(
+            cpuFraction: store.cpu?.totalUsage,
+            memFraction: store.memory?.usedFraction,
+            temperatureC: store.cpuTemperature,
+            showCPU: showCPU,
+            showMemory: showMemory,
+            showTemp: showTemp
+        )
+        // MenuBarExtra squeezes a custom SwiftUI label to one line and clips its
+        // width, so the two-line layout is rendered into an NSImage instead —
+        // the menu bar renders images at full size reliably.
+        Image(nsImage: metrics.isEmpty ? icon : Self.image(for: metrics))
+    }
+
+    /// Draws the metrics into a template image that macOS tints for the menu
+    /// bar. Each metric is a column with a small label on top and a larger value
+    /// below, centered against each other; columns are separated by a fixed gap.
+    ///
+    /// Rows are packed to cap height (no ascender/descender whitespace) so that
+    /// when the image is scaled to the menu bar thickness the glyphs render as
+    /// large as possible.
+    private static func image(for metrics: [MenuBarMetric]) -> NSImage {
+        let labelFont = NSFont.monospacedSystemFont(ofSize: 10, weight: .medium)
+        let valueFont = NSFont.monospacedSystemFont(ofSize: 14, weight: .semibold)
+        // labelColor adapts to the menu bar's light/dark appearance; warning
+        // and danger values pop in yellow/red on both.
+        let labelAttrs: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: NSColor.labelColor]
+
+        let cells = metrics.map { metric -> (label: NSAttributedString, value: NSAttributedString, width: CGFloat) in
+            let valueColor: NSColor
+            switch metric.level {
+            case .normal:  valueColor = .labelColor
+            case .warning: valueColor = .systemYellow
+            case .danger:  valueColor = .systemRed
+            }
+            let label = NSAttributedString(string: metric.label, attributes: labelAttrs)
+            let value = NSAttributedString(string: metric.value, attributes: [.font: valueFont, .foregroundColor: valueColor])
+            return (label, value, ceil(max(label.size().width, value.size().width)))
+        }
+
+        let columnGap: CGFloat = 16
+        let rowGap: CGFloat = 3
+        let width = cells.reduce(0) { $0 + $1.width } + columnGap * CGFloat(max(0, cells.count - 1))
+        let height = ceil(valueFont.capHeight + rowGap + labelFont.capHeight)
+        let valueY = valueFont.descender                              // value caps sit at [0, cap]
+        let labelY = valueFont.capHeight + rowGap + labelFont.descender
+
+        let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
+            // Resolve labelColor against the menu bar's appearance, not the app's.
+            NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+                var x: CGFloat = 0
+                for cell in cells {
+                    cell.value.draw(at: NSPoint(x: x, y: valueY))
+                    cell.label.draw(at: NSPoint(x: x, y: labelY))
+                    x += cell.width + columnGap
+                }
+            }
+            return true
+        }
+        // Not a template: template images are forced monochrome, which would
+        // discard the yellow/red value colors.
+        image.isTemplate = false
+
+        // Scale the whole image down to the menu bar thickness so both rows stay
+        // fully visible instead of the top one being clipped by the bar.
+        let thickness = NSStatusBar.system.thickness
+        if height > thickness {
+            image.size = NSSize(width: width * thickness / height, height: thickness)
+        }
+        return image
     }
 }
 
@@ -165,6 +299,7 @@ final class DesktopWindow: NSWindow {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: DesktopWindow?
     let store = MetricsStore()
+    let usageHistory = UsageHistoryStore(persistence: .init())
 
     /// Sparkle updater. `startingUpdater: true` kicks off the background check
     /// on launch (gated by SUEnableAutomaticChecks in Info.plist); the menu's
@@ -191,6 +326,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         store.start()
+        usageHistory.start(reading: store)
 
         let window = DesktopWindow(
             contentRect: NSRect(x: 0, y: 0, width: 520, height: 300),
@@ -225,26 +361,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.window = window
         if WidgetSettings.isVisible(in: .standard) {
             window.orderFrontRegardless()
-        } else {
-            // Launched hidden: pause fast polling until summoned. The slow
-            // disk/power timers still tick, same as when the widget is occluded.
-            store.suspend()
-        }
-
-        // Pause fast polling when the widget is fully hidden behind other windows.
-        NotificationCenter.default.addObserver(
-            forName: NSWindow.didChangeOcclusionStateNotification,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self, let w = self.window else { return }
-                if w.occlusionState.contains(.visible) {
-                    self.store.resume()
-                } else {
-                    self.store.suspend()
-                }
-            }
         }
 
         // Reconcile the stored width with the actual frame once at startup:
@@ -314,19 +430,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Shows or hides the desktop window to match the stored visibility flag.
     /// Idempotent: it compares against the window's current on-screen state so
     /// unrelated UserDefaults changes don't re-order the window.
+    /// Polling keeps running regardless of visibility so menu-bar metrics and
+    /// usage history stay live even while the widget is hidden.
     private func reconcileVisibility() {
         guard let window else { return }
         let shouldBeVisible = WidgetSettings.isVisible(in: .standard)
         if shouldBeVisible, !window.isVisible {
             window.orderFrontRegardless()
-            store.resume()
         } else if !shouldBeVisible, window.isVisible {
             window.orderOut(nil)
-            store.suspend()
         }
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         store.stop()
+        usageHistory.stop()
     }
 }
