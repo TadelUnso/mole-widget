@@ -57,7 +57,7 @@ public struct WidgetRootView: View {
     @AppStorage(WidgetSettings.fontSizeKey)
     private var fontSize = WidgetSettings.defaultFontSize
     @AppStorage(WidgetSettings.fontStyleKey)
-    private var fontStyle = WidgetSettings.FontStyle.monospaced.rawValue
+    private var fontStyle = WidgetSettings.defaultFontStyle.rawValue
 
     // Section visibility
     @AppStorage(WidgetSettings.showHeaderKey)    private var showHeader    = true

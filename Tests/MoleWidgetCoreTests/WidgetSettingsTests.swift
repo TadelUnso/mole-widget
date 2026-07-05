@@ -50,10 +50,10 @@ import Testing
         #expect(WidgetSettings.resolveFontStyle("monospaced") == .monospaced)
     }
 
-    @Test func resolveFontStyle_invalidOrNil_defaultsToMonospaced() {
-        #expect(WidgetSettings.resolveFontStyle("garbage") == .monospaced)
-        #expect(WidgetSettings.resolveFontStyle(nil) == .monospaced)
-        #expect(WidgetSettings.resolveFontStyle("") == .monospaced)
+    @Test func resolveFontStyle_invalidOrNil_defaultsToSystem() {
+        #expect(WidgetSettings.resolveFontStyle("garbage") == .system)
+        #expect(WidgetSettings.resolveFontStyle(nil) == .system)
+        #expect(WidgetSettings.resolveFontStyle("") == .system)
     }
 
     @Test func isVisible_absentKey_defaultsToVisible() {

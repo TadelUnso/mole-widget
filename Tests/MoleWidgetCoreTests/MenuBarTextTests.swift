@@ -3,52 +3,50 @@ import Testing
 @testable import MoleWidgetCore
 
 @Suite struct MenuBarTextTests {
-    private let gb = UInt64(1_073_741_824)
-
     @Test func allTogglesOff_returnsNil() {
         #expect(MenuBarText.compose(
-            cpuFraction: 0.5, memUsedBytes: 8 * gb, batteryTempC: 30,
+            cpuFraction: 0.5, memFraction: 0.5, batteryTempC: 30,
             showCPU: false, showMemory: false, showTemp: false
         ) == nil)
     }
 
     @Test func singleMetric_cpuOnly() {
         #expect(MenuBarText.compose(
-            cpuFraction: 0.42, memUsedBytes: nil, batteryTempC: nil,
+            cpuFraction: 0.42, memFraction: nil, batteryTempC: nil,
             showCPU: true, showMemory: false, showTemp: false
-        ) == "C 42%")
+        ) == "CPU 42%")
     }
 
     @Test func allThree() {
         let text = MenuBarText.compose(
-            cpuFraction: 0.423, memUsedBytes: 18 * gb + gb / 3, batteryTempC: 31.4,
+            cpuFraction: 0.423, memFraction: 0.34, batteryTempC: 31.4,
             showCPU: true, showMemory: true, showTemp: true
         )
-        #expect(text == "C 42% M 18.3G 31°")
+        #expect(text == "CPU 42%  MEM 34%  TEMP 31°")
     }
 
     @Test func enabledButNilData_showsPlaceholders() {
         #expect(MenuBarText.compose(
-            cpuFraction: nil, memUsedBytes: nil, batteryTempC: nil,
+            cpuFraction: nil, memFraction: nil, batteryTempC: nil,
             showCPU: true, showMemory: true, showTemp: true
-        ) == "C -- M -- --°")
+        ) == "CPU --  MEM --  TEMP --")
     }
 
     @Test func cpuPercent_rounds() {
         #expect(MenuBarText.compose(
-            cpuFraction: 0.005, memUsedBytes: nil, batteryTempC: nil,
+            cpuFraction: 0.005, memFraction: nil, batteryTempC: nil,
             showCPU: true, showMemory: false, showTemp: false
-        ) == "C 1%")
+        ) == "CPU 1%")
         #expect(MenuBarText.compose(
-            cpuFraction: 0.004, memUsedBytes: nil, batteryTempC: nil,
+            cpuFraction: 0.004, memFraction: nil, batteryTempC: nil,
             showCPU: true, showMemory: false, showTemp: false
-        ) == "C 0%")
+        ) == "CPU 0%")
     }
 
     @Test func tempOnly_rounds() {
         #expect(MenuBarText.compose(
-            cpuFraction: nil, memUsedBytes: nil, batteryTempC: 30.6,
+            cpuFraction: nil, memFraction: nil, batteryTempC: 30.6,
             showCPU: false, showMemory: false, showTemp: true
-        ) == "31°")
+        ) == "TEMP 31°")
     }
 }

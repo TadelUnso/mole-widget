@@ -26,12 +26,12 @@ struct MoleWidgetApp: App {
     @AppStorage(WidgetSettings.fontSizeKey)
     private var fontSize = WidgetSettings.defaultFontSize
     @AppStorage(WidgetSettings.fontStyleKey)
-    private var fontStyle = WidgetSettings.FontStyle.monospaced.rawValue
+    private var fontStyle = WidgetSettings.defaultFontStyle.rawValue
 
     // Settings: menu bar metrics
-    @AppStorage(WidgetSettings.menuBarShowCPUKey)    private var menuBarShowCPU    = false
-    @AppStorage(WidgetSettings.menuBarShowMemoryKey) private var menuBarShowMemory = false
-    @AppStorage(WidgetSettings.menuBarShowTempKey)   private var menuBarShowTemp   = false
+    @AppStorage(WidgetSettings.menuBarShowCPUKey)    private var menuBarShowCPU    = WidgetSettings.defaultMenuBarShowCPU
+    @AppStorage(WidgetSettings.menuBarShowMemoryKey) private var menuBarShowMemory = WidgetSettings.defaultMenuBarShowMemory
+    @AppStorage(WidgetSettings.menuBarShowTempKey)   private var menuBarShowTemp   = WidgetSettings.defaultMenuBarShowTemp
 
     // Settings: section visibility
     @AppStorage(WidgetSettings.showHeaderKey)    private var showHeader    = true
@@ -158,14 +158,14 @@ private struct MenuBarLabel: View {
     let store: MetricsStore
     let icon: NSImage
 
-    @AppStorage(WidgetSettings.menuBarShowCPUKey)    private var showCPU    = false
-    @AppStorage(WidgetSettings.menuBarShowMemoryKey) private var showMemory = false
-    @AppStorage(WidgetSettings.menuBarShowTempKey)   private var showTemp   = false
+    @AppStorage(WidgetSettings.menuBarShowCPUKey)    private var showCPU    = WidgetSettings.defaultMenuBarShowCPU
+    @AppStorage(WidgetSettings.menuBarShowMemoryKey) private var showMemory = WidgetSettings.defaultMenuBarShowMemory
+    @AppStorage(WidgetSettings.menuBarShowTempKey)   private var showTemp   = WidgetSettings.defaultMenuBarShowTemp
 
     var body: some View {
         if let text = MenuBarText.compose(
             cpuFraction: store.cpu?.totalUsage,
-            memUsedBytes: store.memory?.used,
+            memFraction: store.memory?.usedFraction,
             batteryTempC: store.power?.temperatureCelsius,
             showCPU: showCPU,
             showMemory: showMemory,

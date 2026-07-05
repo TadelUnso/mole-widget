@@ -53,19 +53,28 @@ public enum WidgetSettings {
 
     public static let fontStyleKey = "fontStyle"
 
+    /// Default font style: the native system face reads more like a first-party
+    /// macOS widget; users who prefer aligned columns can switch to monospaced.
+    public static let defaultFontStyle: FontStyle = .system
+
     /// Resolves a stored raw value into a `FontStyle`, defaulting to
-    /// `.monospaced` for absent or unrecognized values.
+    /// `defaultFontStyle` for absent or unrecognized values.
     public static func resolveFontStyle(_ raw: String?) -> FontStyle {
-        raw.flatMap(FontStyle.init(rawValue:)) ?? .monospaced
+        raw.flatMap(FontStyle.init(rawValue:)) ?? defaultFontStyle
     }
 
     // MARK: - Menu bar metrics
 
-    /// Live metrics shown as text in the menu bar. All default off — a fresh
-    /// install keeps the plain icon until the user opts in.
+    /// Live metrics shown as text in the menu bar. CPU is on by default so the
+    /// menu bar shows a live readout out of the box; memory and temperature are
+    /// opt-in.
     public static let menuBarShowCPUKey    = "menuBarShowCPU"
     public static let menuBarShowMemoryKey = "menuBarShowMemory"
     public static let menuBarShowTempKey   = "menuBarShowTemp"
+
+    public static let defaultMenuBarShowCPU    = true
+    public static let defaultMenuBarShowMemory = false
+    public static let defaultMenuBarShowTemp   = false
 
     // MARK: - Section visibility
 

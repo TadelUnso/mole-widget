@@ -20,7 +20,7 @@ public enum Theme {
         }
     }
 
-    public static let font = font(size: WidgetSettings.defaultFontSize, style: .monospaced)
+    public static let font = font(size: WidgetSettings.defaultFontSize, style: WidgetSettings.defaultFontStyle)
 
     /// Higher load maps to a more alarming color.
     public static func barColor(for fraction: Double) -> Color {
