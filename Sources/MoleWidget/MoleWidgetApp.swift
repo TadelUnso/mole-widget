@@ -77,6 +77,7 @@ struct MoleWidgetApp: App {
             }
             .disabled(!appDelegate.updaterController.updater.canCheckForUpdates)
             Divider()
+            OpenUsageHistoryButton()
             Toggle("Lock position", isOn: $positionLocked)
             Toggle("Show on desktop", isOn: $widgetVisible)
             LaunchAtLoginToggle()
@@ -126,6 +127,25 @@ struct MoleWidgetApp: App {
             .keyboardShortcut("q")
         } label: {
             MenuBarLabel(store: appDelegate.store, icon: Self.menuBarIcon)
+        }
+
+        Window("Usage History", id: "usage-history") {
+            UsageHistoryView(history: appDelegate.usageHistory)
+        }
+        .defaultSize(width: 640, height: 420)
+    }
+}
+
+/// Opens the Usage History window. Lives in its own view so it can read the
+/// `openWindow` environment action (unavailable directly in the App struct).
+/// The app is `.accessory`, so it must activate to bring the window forward.
+private struct OpenUsageHistoryButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Usage History…") {
+            openWindow(id: "usage-history")
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 }
@@ -221,6 +241,7 @@ final class DesktopWindow: NSWindow {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: DesktopWindow?
     let store = MetricsStore()
+    let usageHistory = UsageHistoryStore(persistence: .init())
 
     /// Sparkle updater. `startingUpdater: true` kicks off the background check
     /// on launch (gated by SUEnableAutomaticChecks in Info.plist); the menu's
@@ -247,6 +268,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         store.start()
+        usageHistory.start(reading: store)
 
         let window = DesktopWindow(
             contentRect: NSRect(x: 0, y: 0, width: 520, height: 300),
@@ -364,5 +386,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         store.stop()
+        usageHistory.stop()
     }
 }
