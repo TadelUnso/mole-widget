@@ -225,26 +225,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.window = window
         if WidgetSettings.isVisible(in: .standard) {
             window.orderFrontRegardless()
-        } else {
-            // Launched hidden: pause fast polling until summoned. The slow
-            // disk/power timers still tick, same as when the widget is occluded.
-            store.suspend()
-        }
-
-        // Pause fast polling when the widget is fully hidden behind other windows.
-        NotificationCenter.default.addObserver(
-            forName: NSWindow.didChangeOcclusionStateNotification,
-            object: window,
-            queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self, let w = self.window else { return }
-                if w.occlusionState.contains(.visible) {
-                    self.store.resume()
-                } else {
-                    self.store.suspend()
-                }
-            }
         }
 
         // Reconcile the stored width with the actual frame once at startup:
@@ -314,15 +294,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Shows or hides the desktop window to match the stored visibility flag.
     /// Idempotent: it compares against the window's current on-screen state so
     /// unrelated UserDefaults changes don't re-order the window.
+    /// Polling keeps running regardless of visibility so menu-bar metrics and
+    /// usage history stay live even while the widget is hidden.
     private func reconcileVisibility() {
         guard let window else { return }
         let shouldBeVisible = WidgetSettings.isVisible(in: .standard)
         if shouldBeVisible, !window.isVisible {
             window.orderFrontRegardless()
-            store.resume()
         } else if !shouldBeVisible, window.isVisible {
             window.orderOut(nil)
-            store.suspend()
         }
     }
 
