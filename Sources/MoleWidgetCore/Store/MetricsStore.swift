@@ -45,6 +45,7 @@ public final class MetricsStore {
     public func start() {
         stop() // a repeated start() must not leave stale timers in the RunLoop
         refreshFast()
+        refreshProcesses()
         refreshDiskUsage()
         refreshPower()
         networkInfo = networkCollector.info()
@@ -56,16 +57,26 @@ public final class MetricsStore {
                 ?? WidgetSettings.defaultRefreshInterval
         )
         timers = [
-            Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-                Task { @MainActor in self?.refreshFast() }
-            },
-            Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-                Task { @MainActor in self?.refreshDiskUsage() }
-            },
-            Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
-                Task { @MainActor in self?.refreshPower() }
-            },
+            makeTimer(interval, tolerance: interval * 0.2) { $0.refreshFast() },
+            makeTimer(5, tolerance: 1) { $0.refreshProcesses() },
+            makeTimer(60, tolerance: 15) { $0.refreshDiskUsage() },
+            makeTimer(30, tolerance: 8) { $0.refreshPower() },
         ]
+    }
+
+    /// Repeating timer with a wake-up tolerance so macOS can coalesce it with
+    /// other timers — fewer wake-ups means noticeably lower energy use than
+    /// forcing the system awake precisely on every interval.
+    private func makeTimer(
+        _ interval: TimeInterval,
+        tolerance: TimeInterval,
+        _ body: @escaping (MetricsStore) -> Void
+    ) -> Timer {
+        let timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { @MainActor in if let self { body(self) } }
+        }
+        timer.tolerance = tolerance
+        return timer
     }
 
     public func stop() {
@@ -120,6 +131,21 @@ public final class MetricsStore {
         } else {
             previousNetIO = nil // getifaddrs failure → next sample pair starts fresh
         }
+        healthScore = HealthScore.compute(
+            cpu: cpu?.totalUsage,
+            memUsedFraction: memory?.usedFraction,
+            diskUsedFraction: diskUsage?.usedFraction,
+            batteryHealth: power?.healthFraction,
+            batteryLevel: power?.levelFraction,
+            isCharging: power?.isCharging ?? false
+        )
+    }
+
+    /// Top processes — every 5 seconds. Enumerating every pid
+    /// (`proc_listallpids` + `proc_pid_rusage`/`proc_name` per pid) is the most
+    /// expensive sample, and the "top processes" list does not need sub-second
+    /// freshness, so it runs on its own slower timer instead of the fast tick.
+    public func refreshProcesses() {
         let procSamples = processCollector.sample()
         if !procSamples.isEmpty {
             let now = Date()
@@ -134,15 +160,6 @@ public final class MetricsStore {
         } else {
             previousProcs = nil // collection failure → next sample pair starts fresh
         }
-
-        healthScore = HealthScore.compute(
-            cpu: cpu?.totalUsage,
-            memUsedFraction: memory?.usedFraction,
-            diskUsedFraction: diskUsage?.usedFraction,
-            batteryHealth: power?.healthFraction,
-            batteryLevel: power?.levelFraction,
-            isCharging: power?.isCharging ?? false
-        )
     }
 
     /// Disk usage — every 60 seconds (changes slowly).

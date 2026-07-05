@@ -45,9 +45,11 @@ public final class UsageHistoryStore {
         timer?.invalidate()
         // Check every 10 s; record() gates on sampleInterval so the effective
         // cadence is one sample per minute regardless of the tick rate.
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+        let timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.tick() }
         }
+        timer.tolerance = 5  // coalesce wake-ups; the 60 s sample cadence is unaffected
+        self.timer = timer
     }
 
     public func stop() {
