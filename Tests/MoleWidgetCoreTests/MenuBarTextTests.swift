@@ -3,58 +3,61 @@ import Testing
 @testable import MoleWidgetCore
 
 @Suite struct MenuBarTextTests {
-    @Test func allTogglesOff_returnsNil() {
-        #expect(MenuBarText.compose(
+    private func pairs(_ metrics: [MenuBarMetric]) -> [String] {
+        metrics.map { "\($0.label) \($0.value)" }
+    }
+
+    @Test func allTogglesOff_returnsEmpty() {
+        #expect(MenuBarText.metrics(
             cpuFraction: 0.5, memFraction: 0.5, temperatureC: 30,
             showCPU: false, showMemory: false, showTemp: false
-        ) == nil)
+        ).isEmpty)
     }
 
     @Test func singleMetric_cpuOnly() {
-        #expect(MenuBarText.compose(
+        #expect(pairs(MenuBarText.metrics(
             cpuFraction: 0.42, memFraction: nil, temperatureC: nil,
             showCPU: true, showMemory: false, showTemp: false
-        ) == "CPU 42%")
+        )) == ["CPU 42%"])
     }
 
     @Test func allThree() {
-        let text = MenuBarText.compose(
-            cpuFraction: 0.423, memFraction: 0.34, temperatureC: 31.4,
+        #expect(pairs(MenuBarText.metrics(
+            cpuFraction: 0.423, memFraction: 0.34, temperatureC: 54.4,
             showCPU: true, showMemory: true, showTemp: true
-        )
-        #expect(text == "CPU 42%  MEM 34%  TEMP 31°")
+        )) == ["CPU 42%", "MEM 34%", "TEMP 54°"])
     }
 
-    @Test func allEnabledButNoData_returnsNil() {
-        #expect(MenuBarText.compose(
+    @Test func allEnabledButNoData_returnsEmpty() {
+        #expect(MenuBarText.metrics(
             cpuFraction: nil, memFraction: nil, temperatureC: nil,
             showCPU: true, showMemory: true, showTemp: true
-        ) == nil)
+        ).isEmpty)
     }
 
     @Test func nilMetricIsOmitted() {
-        // Temp enabled but absent (desktop Mac) → dropped, others remain.
-        #expect(MenuBarText.compose(
+        // Temp enabled but absent → dropped, others remain.
+        #expect(pairs(MenuBarText.metrics(
             cpuFraction: 0.42, memFraction: 0.34, temperatureC: nil,
             showCPU: true, showMemory: true, showTemp: true
-        ) == "CPU 42%  MEM 34%")
+        )) == ["CPU 42%", "MEM 34%"])
     }
 
     @Test func cpuPercent_rounds() {
-        #expect(MenuBarText.compose(
+        #expect(pairs(MenuBarText.metrics(
             cpuFraction: 0.005, memFraction: nil, temperatureC: nil,
             showCPU: true, showMemory: false, showTemp: false
-        ) == "CPU 1%")
-        #expect(MenuBarText.compose(
+        )) == ["CPU 1%"])
+        #expect(pairs(MenuBarText.metrics(
             cpuFraction: 0.004, memFraction: nil, temperatureC: nil,
             showCPU: true, showMemory: false, showTemp: false
-        ) == "CPU 0%")
+        )) == ["CPU 0%"])
     }
 
     @Test func tempOnly_rounds() {
-        #expect(MenuBarText.compose(
+        #expect(pairs(MenuBarText.metrics(
             cpuFraction: nil, memFraction: nil, temperatureC: 30.6,
             showCPU: false, showMemory: false, showTemp: true
-        ) == "TEMP 31°")
+        )) == ["TEMP 31°"])
     }
 }

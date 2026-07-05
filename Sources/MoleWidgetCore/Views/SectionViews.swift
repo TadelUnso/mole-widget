@@ -16,7 +16,11 @@ public struct CPUSectionView: View, Equatable {
             if let s = snapshot {
                 MetricRow(label: "Total", fraction: s.totalUsage, value: Fmt.percent(s.totalUsage))
                 if let temperature {
-                    TextRow(label: "Temp", value: String(format: "%.0f°C", temperature))
+                    MetricRow(
+                        label: "Temp",
+                        fraction: temperature / 100,
+                        value: String(format: "%.0f°C", temperature)
+                    )
                 }
                 ForEach(s.topCores, id: \.index) { core in
                     MetricRow(

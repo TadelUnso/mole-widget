@@ -163,17 +163,29 @@ private struct MenuBarLabel: View {
     @AppStorage(WidgetSettings.menuBarShowTempKey)   private var showTemp   = WidgetSettings.defaultMenuBarShowTemp
 
     var body: some View {
-        if let text = MenuBarText.compose(
+        let metrics = MenuBarText.metrics(
             cpuFraction: store.cpu?.totalUsage,
             memFraction: store.memory?.usedFraction,
             temperatureC: store.cpuTemperature,
             showCPU: showCPU,
             showMemory: showMemory,
             showTemp: showTemp
-        ) {
-            Text(text).monospacedDigit()
-        } else {
+        )
+        if metrics.isEmpty {
             Image(nsImage: icon)
+        } else {
+            // Each metric is a compact column: label on top, value below.
+            // Two short lines take far less width than one long row.
+            HStack(spacing: 6) {
+                ForEach(metrics, id: \.label) { metric in
+                    VStack(spacing: -1) {
+                        Text(metric.label)
+                        Text(metric.value)
+                    }
+                }
+            }
+            .font(.system(size: 9))
+            .monospacedDigit()
         }
     }
 }
