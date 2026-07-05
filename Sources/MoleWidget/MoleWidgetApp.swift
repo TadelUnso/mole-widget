@@ -171,22 +171,41 @@ private struct MenuBarLabel: View {
             showMemory: showMemory,
             showTemp: showTemp
         )
-        if metrics.isEmpty {
-            Image(nsImage: icon)
-        } else {
-            // Each metric is a compact column: label on top, value below.
-            // Two short lines take far less width than one long row.
-            HStack(spacing: 6) {
-                ForEach(metrics, id: \.label) { metric in
-                    VStack(spacing: -1) {
-                        Text(metric.label)
-                        Text(metric.value)
-                    }
-                }
-            }
-            .font(.system(size: 9))
-            .monospacedDigit()
+        // MenuBarExtra squeezes a custom SwiftUI label to one line and clips its
+        // width, so the two-line layout is rendered into an NSImage instead —
+        // the menu bar renders images at full size reliably.
+        Image(nsImage: metrics.isEmpty ? icon : Self.image(for: metrics))
+    }
+
+    /// Draws the metrics as two monospaced rows (labels over values, columns
+    /// aligned) into a template image that macOS tints for the menu bar.
+    private static func image(for metrics: [MenuBarMetric]) -> NSImage {
+        let columns = metrics.map { metric -> (label: String, value: String) in
+            let width = max(metric.label.count, metric.value.count)
+            return (
+                metric.label.padding(toLength: width, withPad: " ", startingAt: 0),
+                metric.value.padding(toLength: width, withPad: " ", startingAt: 0)
+            )
         }
+        let labelLine = columns.map(\.label).joined(separator: " ")
+        let valueLine = columns.map(\.value).joined(separator: " ")
+
+        let font = NSFont.monospacedSystemFont(ofSize: 9, weight: .medium)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.black]
+        let top = NSAttributedString(string: labelLine, attributes: attrs)
+        let bottom = NSAttributedString(string: valueLine, attributes: attrs)
+
+        let lineHeight = font.ascender - font.descender
+        let width = ceil(max(top.size().width, bottom.size().width))
+        let height = ceil(lineHeight * 2)
+
+        let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
+            bottom.draw(at: NSPoint(x: 0, y: 0))
+            top.draw(at: NSPoint(x: 0, y: lineHeight))
+            return true
+        }
+        image.isTemplate = true
+        return image
     }
 }
 
