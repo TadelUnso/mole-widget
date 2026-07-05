@@ -191,24 +191,30 @@ private struct MenuBarLabel: View {
         }
 
         let columnGap: CGFloat = 10
-        // Pack the two rows tightly so the menu bar renders the glyphs large
-        // rather than scaling a tall image down.
-        let rowPitch = ceil(font.capHeight) + 3
+        let lineHeight = font.ascender - font.descender
         let width = cells.reduce(0) { $0 + $1.width } + columnGap * CGFloat(max(0, cells.count - 1))
-        let height = rowPitch * 2
+        let height = lineHeight * 2  // two full rows, no internal clipping
 
         let image = NSImage(size: NSSize(width: width, height: height), flipped: false) { _ in
             var x: CGFloat = 0
             for cell in cells {
                 let labelX = x + (cell.width - cell.label.size().width) / 2
                 let valueX = x + (cell.width - cell.value.size().width) / 2
-                cell.value.draw(at: NSPoint(x: valueX, y: -font.descender))
-                cell.label.draw(at: NSPoint(x: labelX, y: rowPitch - font.descender))
+                cell.value.draw(at: NSPoint(x: valueX, y: 0))               // bottom row
+                cell.label.draw(at: NSPoint(x: labelX, y: lineHeight))     // top row
                 x += cell.width + columnGap
             }
             return true
         }
         image.isTemplate = true
+
+        // Drawn at full 11pt height (~26pt); scale the whole image down to the
+        // menu bar thickness so both rows stay fully visible instead of the top
+        // one being clipped by the bar.
+        let thickness = NSStatusBar.system.thickness
+        if height > thickness {
+            image.size = NSSize(width: width * thickness / height, height: thickness)
+        }
         return image
     }
 }
