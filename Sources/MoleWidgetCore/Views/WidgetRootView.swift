@@ -171,14 +171,13 @@ public struct WidgetRootView: View {
 
     // MARK: - Title bar
 
-    /// Always-visible first row: app glyph + name on the left,
+    /// Always-visible first row: app name on the left,
     /// size and lock controls on the right, Ko-fi badge centered behind them.
     /// Permanent home of the lock — visible even when all sections are hidden.
     private var titleBar: some View {
         ZStack {
             KofiButton()
             HStack(spacing: 6) {
-                TitleGlyphView()
                 Text("Mole Widget")
                     .fontWeight(.bold)
                     .foregroundStyle(Theme.header)

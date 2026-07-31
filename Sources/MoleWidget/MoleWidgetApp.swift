@@ -44,22 +44,22 @@ struct MoleWidgetApp: App {
     @AppStorage(WidgetSettings.showNetworkKey)   private var showNetwork   = true
     @AppStorage(WidgetSettings.showProcessesKey) private var showProcesses = true
 
-    /// Monochrome template glyph echoing the app icon: four bars of varying
-    /// length. Template images get tinted by macOS for light/dark menu bars.
+    /// Monochrome template glyph: a bold "M".
+    /// Template images get tinted by macOS for light/dark menu bars.
     private static let menuBarIcon: NSImage = {
         let size = NSSize(width: 18, height: 16)
+        // Drawn opaque (black); the image is a template, so macOS recolors it.
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 14, weight: .bold),
+            .foregroundColor: NSColor.black,
+        ]
+        let letter = "M" as NSString
+        let letterSize = letter.size(withAttributes: attributes)
         let image = NSImage(size: size, flipped: false) { _ in
-            NSColor.black.setFill()
-            let barHeight: CGFloat = 2.6
-            let gap: CGFloat = 1.1
-            // Bar lengths mirror the app icon proportions (560/360/470/220)
-            let widths: [CGFloat] = [14, 9, 11.8, 5.5]
-            var y: CGFloat = size.height - barHeight - 0.6
-            for width in widths {
-                let bar = NSRect(x: 2, y: y, width: width, height: barHeight)
-                NSBezierPath(roundedRect: bar, xRadius: barHeight / 2, yRadius: barHeight / 2).fill()
-                y -= barHeight + gap
-            }
+            // Center on the glyph's own metrics rather than eyeballed offsets.
+            let origin = NSPoint(x: (size.width - letterSize.width) / 2,
+                                 y: (size.height - letterSize.height) / 2)
+            letter.draw(at: origin, withAttributes: attributes)
             return true
         }
         image.isTemplate = true
