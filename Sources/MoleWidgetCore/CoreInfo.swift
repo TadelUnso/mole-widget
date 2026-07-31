@@ -1,3 +1,3 @@
 public enum CoreInfo {
-    public static let version = "0.8.3"
+    public static let version = "0.8.4"
 }
