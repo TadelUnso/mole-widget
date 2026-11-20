@@ -20,6 +20,31 @@ import Testing
         }
     }
 
+    @Test func columnCount_auto_switchesToThreeWhenWide() {
+        #expect(WidgetSettings.columnCount(mode: .auto, width: WidgetSettings.defaultWidth) == 2)
+        #expect(WidgetSettings.columnCount(mode: .auto, width: WidgetSettings.threeColumnMinWidth - 1) == 2)
+        #expect(WidgetSettings.columnCount(mode: .auto, width: WidgetSettings.threeColumnMinWidth) == 3)
+        #expect(WidgetSettings.columnCount(mode: .auto, width: WidgetSettings.maxWidth) == 3)
+    }
+
+    @Test func columnCount_fixedModes_ignoreWidth() {
+        #expect(WidgetSettings.columnCount(mode: .two, width: WidgetSettings.maxWidth) == 2)
+        #expect(WidgetSettings.columnCount(mode: .three, width: WidgetSettings.minWidth) == 3)
+    }
+
+    @Test func effectiveWidth_forcedThree_widensNarrowWidget() {
+        #expect(WidgetSettings.effectiveWidth(stored: 520, mode: .three) == WidgetSettings.threeColumnMinWidth)
+        #expect(WidgetSettings.effectiveWidth(stored: 1000, mode: .three) == 1000)
+        #expect(WidgetSettings.effectiveWidth(stored: 520, mode: .auto) == 520)
+        #expect(WidgetSettings.effectiveWidth(stored: 100, mode: .two) == WidgetSettings.minWidth)
+    }
+
+    @Test func resolveColumnMode_defaultsToAuto() {
+        #expect(WidgetSettings.resolveColumnMode(nil) == .auto)
+        #expect(WidgetSettings.resolveColumnMode("garbage") == .auto)
+        #expect(WidgetSettings.resolveColumnMode("three") == .three)
+    }
+
     @Test func clampOpacity_belowMin_returnsMin() {
         #expect(WidgetSettings.clampOpacity(0.0) == 0.3)
         #expect(WidgetSettings.clampOpacity(-1.0) == 0.3)

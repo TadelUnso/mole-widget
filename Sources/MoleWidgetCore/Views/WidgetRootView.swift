@@ -50,6 +50,8 @@ public struct WidgetRootView: View {
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
     @AppStorage(WidgetSettings.widgetVisibleKey) private var widgetVisible = true
     @AppStorage(WidgetSettings.widgetWidthKey) private var widgetWidth = WidgetSettings.defaultWidth
+    @AppStorage(WidgetSettings.columnModeKey)
+    private var columnMode = WidgetSettings.defaultColumnMode.rawValue
 
     // Appearance
     @AppStorage(WidgetSettings.backgroundOpacityKey)
@@ -70,9 +72,23 @@ public struct WidgetRootView: View {
 
     @State private var dragStartWidth: Double?
 
-    /// Two columns + inter-column spacing (24) + horizontal padding (2×16).
+    private var resolvedColumnMode: WidgetSettings.ColumnMode {
+        WidgetSettings.resolveColumnMode(columnMode)
+    }
+
+    /// Width the widget is laid out at (forced three columns widen it).
+    private var effectiveWidth: Double {
+        WidgetSettings.effectiveWidth(stored: widgetWidth, mode: resolvedColumnMode)
+    }
+
+    private var columnCount: Int {
+        WidgetSettings.columnCount(mode: resolvedColumnMode, width: effectiveWidth)
+    }
+
+    /// N columns + inter-column spacing (24 each) + horizontal padding (2×16).
     private var columnWidth: CGFloat {
-        (WidgetSettings.clampWidth(widgetWidth) - 24 - 32) / 2
+        let n = CGFloat(columnCount)
+        return (effectiveWidth - 24 * (n - 1) - 32) / n
     }
 
     /// Ordered list of enabled section slots.
@@ -134,21 +150,18 @@ public struct WidgetRootView: View {
 
                 if !enabledSections.isEmpty {
                     Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 16) {
-                        // Chunk the enabled sections into pairs; the odd tail sits alone.
-                        // Row identity = leading section, so rows keep stable identity
-                        // when other sections are toggled on/off.
-                        let pairs = enabledSections.chunks(of: 2)
-                        ForEach(pairs, id: \.[0].id) { pair in
+                        // Chunk the enabled sections into rows of `columnCount`; a short
+                        // tail row is padded with spacers. Row identity = leading section,
+                        // so rows keep stable identity when other sections are toggled.
+                        let rows = enabledSections.chunks(of: columnCount)
+                        ForEach(rows, id: \.[0].id) { row in
                             GridRow {
-                                // Leading cell (always present)
-                                sectionView(for: pair[0])
-                                    .frame(width: columnWidth, alignment: .topLeading)
-                                // Trailing cell (present only in full pairs)
-                                if pair.count > 1 {
-                                    sectionView(for: pair[1])
+                                ForEach(row) { section in
+                                    sectionView(for: section)
                                         .frame(width: columnWidth, alignment: .topLeading)
-                                } else {
-                                    // Empty spacer to keep the grid geometry consistent
+                                }
+                                // Empty spacers keep the grid geometry consistent
+                                ForEach(row.count ..< columnCount, id: \.self) { _ in
                                     Color.clear
                                         .frame(width: columnWidth)
                                 }
@@ -237,7 +250,7 @@ public struct WidgetRootView: View {
                 DragGesture(minimumDistance: 1, coordinateSpace: .global)
                     .onChanged { value in
                         guard !positionLocked else { return }
-                        let start = dragStartWidth ?? widgetWidth
+                        let start = dragStartWidth ?? effectiveWidth
                         dragStartWidth = start
                         widgetWidth = WidgetSettings.clampWidth(start + value.translation.width)
                     }

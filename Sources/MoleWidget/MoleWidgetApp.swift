@@ -416,7 +416,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Width: driven by the drag-resize handle stored in UserDefaults.
         let stored = UserDefaults.standard.object(forKey: WidgetSettings.widgetWidthKey) as? Double
             ?? WidgetSettings.defaultWidth
-        let targetWidth = WidgetSettings.clampWidth(stored)
+        let mode = WidgetSettings.resolveColumnMode(
+            UserDefaults.standard.string(forKey: WidgetSettings.columnModeKey)
+        )
+        let targetWidth = WidgetSettings.effectiveWidth(stored: stored, mode: mode)
         let widthChanged = abs(window.frame.width - targetWidth) > 0.5
 
         // Height: derived from SwiftUI fitting size after layout.

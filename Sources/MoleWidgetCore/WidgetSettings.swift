@@ -29,6 +29,43 @@ public enum WidgetSettings {
         min(max(width, minWidth), maxWidth)
     }
 
+    // MARK: - Columns
+
+    /// How many section columns the widget grid uses.
+    public enum ColumnMode: String {
+        /// Two columns, switching to three once the widget is wide enough.
+        case auto
+        case two
+        case three
+    }
+
+    public static let columnModeKey = "columnMode"
+    public static let defaultColumnMode: ColumnMode = .auto
+
+    /// Narrowest width at which three columns fit without the longest rows
+    /// wrapping (same per-column room as two columns at `minWidth`).
+    public static let threeColumnMinWidth: Double = 760
+
+    public static func resolveColumnMode(_ raw: String?) -> ColumnMode {
+        raw.flatMap(ColumnMode.init(rawValue:)) ?? defaultColumnMode
+    }
+
+    /// Number of grid columns for the given mode at the given widget width.
+    public static func columnCount(mode: ColumnMode, width: Double) -> Int {
+        switch mode {
+        case .two:   return 2
+        case .three: return 3
+        case .auto:  return clampWidth(width) >= threeColumnMinWidth ? 3 : 2
+        }
+    }
+
+    /// Width the widget is actually laid out at: the stored width, clamped,
+    /// and widened to `threeColumnMinWidth` when three columns are forced.
+    public static func effectiveWidth(stored: Double, mode: ColumnMode) -> Double {
+        let width = clampWidth(stored)
+        return mode == .three ? max(width, threeColumnMinWidth) : width
+    }
+
     // MARK: - Background opacity
 
     public static let backgroundOpacityKey = "backgroundOpacity"
