@@ -12,8 +12,18 @@ public enum WidgetSettings {
 
     /// Below this width the longest text rows start wrapping.
     public static let minWidth: Double = 490
-    public static let maxWidth: Double = 880
+    public static let maxWidth: Double = 1200
     public static let defaultWidth: Double = 520
+
+    /// One-click width presets offered in Settings.
+    public static let widthPresets: [(label: String, width: Double)] = [
+        ("Compact", 520),
+        ("Medium", 640),
+        ("Wide", 760),
+        ("Extra Wide", 880),
+        ("Huge", 1040),
+        ("Maximum", 1200),
+    ]
 
     public static func clampWidth(_ width: Double) -> Double {
         min(max(width, minWidth), maxWidth)

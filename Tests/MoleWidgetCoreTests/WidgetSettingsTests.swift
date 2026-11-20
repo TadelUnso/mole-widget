@@ -11,6 +11,15 @@ import Testing
         #expect(WidgetSettings.clampWidth(WidgetSettings.maxWidth) == WidgetSettings.maxWidth)
     }
 
+    @Test func widthPresets_areWithinBoundsAndAscending() {
+        let widths = WidgetSettings.widthPresets.map(\.width)
+        #expect(widths.contains(WidgetSettings.defaultWidth))
+        #expect(widths == widths.sorted())
+        for w in widths {
+            #expect(WidgetSettings.clampWidth(w) == w)
+        }
+    }
+
     @Test func clampOpacity_belowMin_returnsMin() {
         #expect(WidgetSettings.clampOpacity(0.0) == 0.3)
         #expect(WidgetSettings.clampOpacity(-1.0) == 0.3)
