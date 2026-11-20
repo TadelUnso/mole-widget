@@ -45,6 +45,13 @@ import Testing
         #expect(WidgetSettings.resolveColumnMode("three") == .three)
     }
 
+    @Test func clampCornerRadius_staysInRange() {
+        #expect(WidgetSettings.clampCornerRadius(-5) == WidgetSettings.minCornerRadius)
+        #expect(WidgetSettings.clampCornerRadius(100) == WidgetSettings.maxCornerRadius)
+        #expect(WidgetSettings.clampCornerRadius(WidgetSettings.defaultCornerRadius) == WidgetSettings.defaultCornerRadius)
+        #expect(WidgetSettings.clampCornerRadius(WidgetSettings.nativeCornerRadius) == WidgetSettings.nativeCornerRadius)
+    }
+
     @Test func kofiBadge_shownByDefault() {
         #expect(WidgetSettings.defaultShowKofi)
     }

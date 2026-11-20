@@ -57,6 +57,8 @@ public struct WidgetRootView: View {
     // Appearance
     @AppStorage(WidgetSettings.backgroundOpacityKey)
     private var backgroundOpacity = WidgetSettings.defaultOpacity
+    @AppStorage(WidgetSettings.cornerRadiusKey)
+    private var cornerRadius = WidgetSettings.defaultCornerRadius
     @AppStorage(WidgetSettings.fontSizeKey)
     private var fontSize = WidgetSettings.defaultFontSize
     @AppStorage(WidgetSettings.fontStyleKey)
@@ -177,7 +179,10 @@ public struct WidgetRootView: View {
             style: WidgetSettings.resolveFontStyle(fontStyle)
         ))
         .padding(16)
-        .modifier(WidgetBackground(opacity: backgroundOpacity))
+        .modifier(WidgetBackground(
+            opacity: backgroundOpacity,
+            cornerRadius: WidgetSettings.clampCornerRadius(cornerRadius)
+        ))
         .overlay(alignment: .trailing) {
             resizeHandle
         }
@@ -377,25 +382,31 @@ private struct FrostView: NSViewRepresentable {
 /// appearance; falls back to the opaque dark panel on earlier systems.
 private struct WidgetBackground: ViewModifier {
     let opacity: Double
+    let cornerRadius: Double
+
+    /// Continuous ("squircle") corners, like native macOS widgets.
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    }
 
     func body(content: Content) -> some View {
         #if swift(>=6.3)
         if #available(macOS 26, *) {
             content
-                .background(Color.black.opacity(0.30), in: RoundedRectangle(cornerRadius: 12))
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+                .background(Color.black.opacity(0.30), in: shape)
+                .glassEffect(.regular, in: shape)
         } else {
             content
                 .background(
                     Theme.background.opacity(WidgetSettings.clampOpacity(opacity)),
-                    in: RoundedRectangle(cornerRadius: 12)
+                    in: shape
                 )
         }
         #else
         content
             .background(
                 Theme.background.opacity(WidgetSettings.clampOpacity(opacity)),
-                in: RoundedRectangle(cornerRadius: 12)
+                in: shape
             )
         #endif
     }

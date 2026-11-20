@@ -66,6 +66,21 @@ public enum WidgetSettings {
         return mode == .three ? max(width, threeColumnMinWidth) : width
     }
 
+    // MARK: - Corner radius
+
+    /// Corner radius of the widget background (points).
+    public static let cornerRadiusKey = "cornerRadius"
+    /// Keeps the look existing users are used to.
+    public static let defaultCornerRadius: Double = 12
+    /// Roughly what native macOS desktop widgets use.
+    public static let nativeCornerRadius: Double = 24
+    public static let minCornerRadius: Double = 0
+    public static let maxCornerRadius: Double = 32
+
+    public static func clampCornerRadius(_ radius: Double) -> Double {
+        min(max(radius, minCornerRadius), maxCornerRadius)
+    }
+
     // MARK: - Ko-fi badge
 
     /// Whether the Ko-fi "Support" badge is shown in the widget title bar.
