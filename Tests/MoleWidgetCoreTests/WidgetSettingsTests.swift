@@ -45,6 +45,10 @@ import Testing
         #expect(WidgetSettings.resolveColumnMode("three") == .three)
     }
 
+    @Test func kofiBadge_shownByDefault() {
+        #expect(WidgetSettings.defaultShowKofi)
+    }
+
     @Test func clampOpacity_belowMin_returnsMin() {
         #expect(WidgetSettings.clampOpacity(0.0) == 0.3)
         #expect(WidgetSettings.clampOpacity(-1.0) == 0.3)

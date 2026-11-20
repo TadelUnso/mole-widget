@@ -66,6 +66,12 @@ public enum WidgetSettings {
         return mode == .three ? max(width, threeColumnMinWidth) : width
     }
 
+    // MARK: - Ko-fi badge
+
+    /// Whether the Ko-fi "Support" badge is shown in the widget title bar.
+    public static let showKofiKey = "showKofi"
+    public static let defaultShowKofi: Bool = true
+
     // MARK: - Background opacity
 
     public static let backgroundOpacityKey = "backgroundOpacity"

@@ -50,6 +50,7 @@ public struct WidgetRootView: View {
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
     @AppStorage(WidgetSettings.widgetVisibleKey) private var widgetVisible = true
     @AppStorage(WidgetSettings.widgetWidthKey) private var widgetWidth = WidgetSettings.defaultWidth
+    @AppStorage(WidgetSettings.showKofiKey) private var showKofi = WidgetSettings.defaultShowKofi
     @AppStorage(WidgetSettings.columnModeKey)
     private var columnMode = WidgetSettings.defaultColumnMode.rawValue
 
@@ -189,7 +190,9 @@ public struct WidgetRootView: View {
     /// Permanent home of the lock — visible even when all sections are hidden.
     private var titleBar: some View {
         ZStack {
-            KofiButton()
+            if showKofi {
+                KofiButton()
+            }
             HStack(spacing: 6) {
                 Text("Mole Widget")
                     .fontWeight(.bold)
