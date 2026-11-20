@@ -10,38 +10,10 @@ enum WidgetSection: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
 }
 
-// MARK: - Size presets
-
-/// One-tap presets that set the visible section mix.
-/// nil activePreset means the user has a custom selection that matches none of the three.
-private enum SizePreset: CaseIterable {
-    case small, medium, large
-
-    var sections: Set<WidgetSection> {
-        switch self {
-        case .small:  return [.cpu, .memory]
-        case .medium: return [.cpu, .memory, .disk, .power]
-        case .large:  return Set(WidgetSection.allCases)
-        }
-    }
-
-    var label: String {
-        switch self { case .small: "S"; case .medium: "M"; case .large: "L" }
-    }
-
-    var helpText: String {
-        switch self {
-        case .small:  return "Small — CPU & Memory"
-        case .medium: return "Medium — CPU, Memory, Disk & Power"
-        case .large:  return "Large — all sections"
-        }
-    }
-}
-
 // MARK: - WidgetRootView
 
 /// Root widget view: an always-visible title bar (app glyph + name on the
-/// left, update/lock controls on the right), a dynamic grid of sections on
+/// left, settings/lock/hide controls on the right), a dynamic grid of sections on
 /// a dark backdrop, and an invisible resize handle along the right edge
 /// (drag to adjust width).
 public struct WidgetRootView: View {
@@ -108,30 +80,6 @@ public struct WidgetRootView: View {
         }
     }
 
-    /// nil when the current section mix doesn't match any preset.
-    private var activePreset: SizePreset? {
-        let current = Set(WidgetSection.allCases.filter { section in
-            switch section {
-            case .cpu:       return showCPU
-            case .memory:    return showMemory
-            case .disk:      return showDisk
-            case .power:     return showPower
-            case .network:   return showNetwork
-            case .processes: return showProcesses
-            }
-        })
-        return SizePreset.allCases.first { $0.sections == current }
-    }
-
-    private func applyPreset(_ preset: SizePreset) {
-        showCPU       = preset.sections.contains(.cpu)
-        showMemory    = preset.sections.contains(.memory)
-        showDisk      = preset.sections.contains(.disk)
-        showPower     = preset.sections.contains(.power)
-        showNetwork   = preset.sections.contains(.network)
-        showProcesses = preset.sections.contains(.processes)
-    }
-
     public init(store: MetricsStore) {
         self.store = store
     }
@@ -191,7 +139,7 @@ public struct WidgetRootView: View {
     // MARK: - Title bar
 
     /// Always-visible first row: app name on the left,
-    /// size and lock controls on the right, Ko-fi badge centered behind them.
+    /// settings, lock and hide controls on the right, Ko-fi badge centered behind them.
     /// Permanent home of the lock — visible even when all sections are hidden.
     private var titleBar: some View {
         ZStack {
@@ -204,7 +152,7 @@ public struct WidgetRootView: View {
                     .foregroundStyle(Theme.header)
                 Spacer()
                 HStack(spacing: 2) {
-                    sizeButtons
+                    settingsButton
                     lockButton
                     hideButton
                 }
@@ -266,22 +214,23 @@ public struct WidgetRootView: View {
             )
     }
 
-    // MARK: - Size preset buttons
+    // MARK: - Settings button
 
-    private var sizeButtons: some View {
-        HStack(spacing: 0) {
-            ForEach(SizePreset.allCases, id: \.label) { preset in
-                Button { applyPreset(preset) } label: {
-                    Text(preset.label)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(activePreset == preset ? Theme.header : Theme.dim)
-                        .frame(width: 16, height: 20)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(preset.helpText)
-            }
+    /// Opens the Settings window. The widget lives in a plain NSWindow outside
+    /// the SwiftUI scene graph, so it can't call `openSettings` itself; it posts
+    /// a notification the app's menu bar label turns into `openSettings()`.
+    private var settingsButton: some View {
+        Button {
+            NotificationCenter.default.post(name: .moleWidgetOpenSettings, object: nil)
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.dim)
+                .frame(width: 20, height: 20) // hit area slightly larger than the icon
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .help("Open Settings")
     }
 
     // MARK: - Lock button

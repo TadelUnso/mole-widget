@@ -112,6 +112,10 @@ private struct MenuBarLabel: View {
     @AppStorage(WidgetSettings.menuBarShowNetworkKey) private var showNetwork = WidgetSettings.defaultMenuBarShowNetwork
     @AppStorage(WidgetSettings.menuBarShowDiskKey)    private var showDisk    = WidgetSettings.defaultMenuBarShowDisk
 
+    /// The label is the one SwiftUI view that is always alive inside the app's
+    /// scene graph, so it relays the widget's gear button to `openSettings`.
+    @Environment(\.openSettings) private var openSettings
+
     var body: some View {
         let values = MenuBarValues(
             cpuFraction: store.cpu?.totalUsage,
@@ -135,6 +139,10 @@ private struct MenuBarLabel: View {
         // width, so the two-line layout is rendered into an NSImage instead —
         // the menu bar renders images at full size reliably.
         Image(nsImage: metrics.isEmpty ? icon : Self.image(for: metrics))
+            .onReceive(NotificationCenter.default.publisher(for: .moleWidgetOpenSettings)) { _ in
+                NSApp.activate(ignoringOtherApps: true)
+                openSettings()
+            }
     }
 
     /// Draws the metrics into a template image that macOS tints for the menu

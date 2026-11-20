@@ -178,3 +178,8 @@ public enum WidgetSettings {
             : defaults.bool(forKey: widgetVisibleKey)
     }
 }
+
+public extension Notification.Name {
+    /// Posted by the widget's gear button; the app answers by opening Settings.
+    static let moleWidgetOpenSettings = Notification.Name("MoleWidgetOpenSettings")
+}

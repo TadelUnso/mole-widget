@@ -211,9 +211,6 @@ private struct SectionsSettingsTab: View {
                 Toggle("Processes", isOn: $showProcesses)
             } header: {
                 Text("Metrics")
-            } footer: {
-                Text("The S / M / L buttons in the widget title bar switch between common combinations.")
-                    .foregroundStyle(.secondary)
             }
         }
         .formStyle(.grouped)
