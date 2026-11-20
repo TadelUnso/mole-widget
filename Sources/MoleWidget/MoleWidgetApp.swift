@@ -10,40 +10,6 @@ struct MoleWidgetApp: App {
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
     @AppStorage(WidgetSettings.widgetVisibleKey) private var widgetVisible = true
 
-    // Settings: opacity
-    // NOTE: write only via the Picker binding — the tags are exact Double
-    // literals; arithmetic writes would break Picker selection matching.
-    @AppStorage(WidgetSettings.backgroundOpacityKey)
-    private var backgroundOpacity = WidgetSettings.defaultOpacity
-
-    // Settings: refresh rate
-    @AppStorage(WidgetSettings.refreshIntervalKey)
-    private var refreshInterval = WidgetSettings.defaultRefreshInterval
-
-    // Settings: font
-    // NOTE: font-size tags are exact Double literals — same Picker matching
-    // constraint as opacity above.
-    @AppStorage(WidgetSettings.fontSizeKey)
-    private var fontSize = WidgetSettings.defaultFontSize
-    @AppStorage(WidgetSettings.fontStyleKey)
-    private var fontStyle = WidgetSettings.defaultFontStyle.rawValue
-
-    // Settings: menu bar metrics
-    @AppStorage(WidgetSettings.menuBarShowCPUKey)     private var menuBarShowCPU     = WidgetSettings.defaultMenuBarShowCPU
-    @AppStorage(WidgetSettings.menuBarShowMemoryKey)  private var menuBarShowMemory  = WidgetSettings.defaultMenuBarShowMemory
-    @AppStorage(WidgetSettings.menuBarShowTempKey)    private var menuBarShowTemp    = WidgetSettings.defaultMenuBarShowTemp
-    @AppStorage(WidgetSettings.menuBarShowNetworkKey) private var menuBarShowNetwork = WidgetSettings.defaultMenuBarShowNetwork
-    @AppStorage(WidgetSettings.menuBarShowDiskKey)    private var menuBarShowDisk    = WidgetSettings.defaultMenuBarShowDisk
-
-    // Settings: section visibility
-    @AppStorage(WidgetSettings.showHeaderKey)    private var showHeader    = true
-    @AppStorage(WidgetSettings.showCPUKey)       private var showCPU       = true
-    @AppStorage(WidgetSettings.showMemoryKey)    private var showMemory    = true
-    @AppStorage(WidgetSettings.showDiskKey)      private var showDisk      = true
-    @AppStorage(WidgetSettings.showPowerKey)     private var showPower     = true
-    @AppStorage(WidgetSettings.showNetworkKey)   private var showNetwork   = true
-    @AppStorage(WidgetSettings.showProcessesKey) private var showProcesses = true
-
     /// Monochrome template glyph: a bold "M".
     /// Template images get tinted by macOS for light/dark menu bars.
     private static let menuBarIcon: NSImage = {
@@ -83,47 +49,7 @@ struct MoleWidgetApp: App {
             Toggle("Lock position", isOn: $positionLocked)
             Toggle("Show on desktop", isOn: $widgetVisible)
             LaunchAtLoginToggle()
-            Menu("Settings") {
-                if #unavailable(macOS 26) {
-                    Picker("Opacity", selection: $backgroundOpacity) {
-                        Text("100%").tag(1.0)
-                        Text("92%").tag(0.92)
-                        Text("85%").tag(0.85)
-                        Text("70%").tag(0.7)
-                    }
-                }
-                Picker("Refresh rate", selection: $refreshInterval) {
-                    Text("1 s").tag(1.0)
-                    Text("2 s").tag(2.0)
-                    Text("5 s").tag(5.0)
-                }
-                Picker("Font size", selection: $fontSize) {
-                    Text("Small").tag(11.0)
-                    Text("Medium").tag(12.0)
-                    Text("Large").tag(14.0)
-                    Text("Extra Large").tag(16.0)
-                }
-                Picker("Font style", selection: $fontStyle) {
-                    Text("Monospaced").tag(WidgetSettings.FontStyle.monospaced.rawValue)
-                    Text("System").tag(WidgetSettings.FontStyle.system.rawValue)
-                }
-                Menu("Menu bar metrics") {
-                    Toggle("CPU",     isOn: $menuBarShowCPU)
-                    Toggle("Memory",  isOn: $menuBarShowMemory)
-                    Toggle("CPU temperature", isOn: $menuBarShowTemp)
-                    Toggle("Network", isOn: $menuBarShowNetwork)
-                    Toggle("Disk",    isOn: $menuBarShowDisk)
-                }
-                Menu("Sections") {
-                    Toggle("Header",    isOn: $showHeader)
-                    Toggle("CPU",       isOn: $showCPU)
-                    Toggle("Memory",    isOn: $showMemory)
-                    Toggle("Disk",      isOn: $showDisk)
-                    Toggle("Power",     isOn: $showPower)
-                    Toggle("Network",   isOn: $showNetwork)
-                    Toggle("Processes", isOn: $showProcesses)
-                }
-            }
+            OpenSettingsButton()
             Divider()
             Button("Quit Mole Widget") {
                 NSApplication.shared.terminate(nil)
@@ -137,6 +63,24 @@ struct MoleWidgetApp: App {
             UsageHistoryView(history: appDelegate.usageHistory)
         }
         .defaultSize(width: 640, height: 420)
+
+        Settings {
+            SettingsView()
+        }
+    }
+}
+
+/// Opens the native Settings window (⌘,). The app is `.accessory`, so it
+/// must activate first or the window opens behind other apps.
+private struct OpenSettingsButton: View {
+    @Environment(\.openSettings) private var openSettings
+
+    var body: some View {
+        Button("Settings…") {
+            NSApp.activate(ignoringOtherApps: true)
+            openSettings()
+        }
+        .keyboardShortcut(",")
     }
 }
 
@@ -168,6 +112,10 @@ private struct MenuBarLabel: View {
     @AppStorage(WidgetSettings.menuBarShowNetworkKey) private var showNetwork = WidgetSettings.defaultMenuBarShowNetwork
     @AppStorage(WidgetSettings.menuBarShowDiskKey)    private var showDisk    = WidgetSettings.defaultMenuBarShowDisk
 
+    /// The label is the one SwiftUI view that is always alive inside the app's
+    /// scene graph, so it relays the widget's gear button to `openSettings`.
+    @Environment(\.openSettings) private var openSettings
+
     var body: some View {
         let values = MenuBarValues(
             cpuFraction: store.cpu?.totalUsage,
@@ -191,6 +139,10 @@ private struct MenuBarLabel: View {
         // width, so the two-line layout is rendered into an NSImage instead —
         // the menu bar renders images at full size reliably.
         Image(nsImage: metrics.isEmpty ? icon : Self.image(for: metrics))
+            .onReceive(NotificationCenter.default.publisher(for: .moleWidgetOpenSettings)) { _ in
+                NSApp.activate(ignoringOtherApps: true)
+                openSettings()
+            }
     }
 
     /// Draws the metrics into a template image that macOS tints for the menu
@@ -254,32 +206,6 @@ private struct MenuBarLabel: View {
             image.size = NSSize(width: width * thickness / height, height: thickness)
         }
         return image
-    }
-}
-
-/// "Launch at login" menu item backed by SMAppService (macOS 13+).
-/// Registration only works when running as a proper .app bundle;
-/// from a bare dev binary register() throws and the toggle reverts.
-private struct LaunchAtLoginToggle: View {
-    @State private var enabled = SMAppService.mainApp.status == .enabled
-
-    var body: some View {
-        Toggle("Launch at login", isOn: Binding(
-            get: { enabled },
-            set: { newValue in
-                do {
-                    if newValue {
-                        try SMAppService.mainApp.register()
-                    } else {
-                        try SMAppService.mainApp.unregister()
-                    }
-                    enabled = newValue
-                } catch {
-                    // Keep the toggle in sync with reality on failure
-                    enabled = SMAppService.mainApp.status == .enabled
-                }
-            }
-        ))
     }
 }
 
@@ -416,7 +342,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Width: driven by the drag-resize handle stored in UserDefaults.
         let stored = UserDefaults.standard.object(forKey: WidgetSettings.widgetWidthKey) as? Double
             ?? WidgetSettings.defaultWidth
-        let targetWidth = WidgetSettings.clampWidth(stored)
+        let mode = WidgetSettings.resolveColumnMode(
+            UserDefaults.standard.string(forKey: WidgetSettings.columnModeKey)
+        )
+        let targetWidth = WidgetSettings.effectiveWidth(stored: stored, mode: mode)
         let widthChanged = abs(window.frame.width - targetWidth) > 0.5
 
         // Height: derived from SwiftUI fitting size after layout.

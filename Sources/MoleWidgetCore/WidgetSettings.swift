@@ -12,12 +12,80 @@ public enum WidgetSettings {
 
     /// Below this width the longest text rows start wrapping.
     public static let minWidth: Double = 490
-    public static let maxWidth: Double = 880
+    public static let maxWidth: Double = 1200
     public static let defaultWidth: Double = 520
+
+    /// One-click width presets offered in Settings.
+    public static let widthPresets: [(label: String, width: Double)] = [
+        ("Compact", 520),
+        ("Medium", 640),
+        ("Wide", 760),
+        ("Extra Wide", 880),
+        ("Huge", 1040),
+        ("Maximum", 1200),
+    ]
 
     public static func clampWidth(_ width: Double) -> Double {
         min(max(width, minWidth), maxWidth)
     }
+
+    // MARK: - Columns
+
+    /// How many section columns the widget grid uses.
+    public enum ColumnMode: String {
+        /// Two columns, switching to three once the widget is wide enough.
+        case auto
+        case two
+        case three
+    }
+
+    public static let columnModeKey = "columnMode"
+    public static let defaultColumnMode: ColumnMode = .auto
+
+    /// Narrowest width at which three columns fit without the longest rows
+    /// wrapping (same per-column room as two columns at `minWidth`).
+    public static let threeColumnMinWidth: Double = 760
+
+    public static func resolveColumnMode(_ raw: String?) -> ColumnMode {
+        raw.flatMap(ColumnMode.init(rawValue:)) ?? defaultColumnMode
+    }
+
+    /// Number of grid columns for the given mode at the given widget width.
+    public static func columnCount(mode: ColumnMode, width: Double) -> Int {
+        switch mode {
+        case .two:   return 2
+        case .three: return 3
+        case .auto:  return clampWidth(width) >= threeColumnMinWidth ? 3 : 2
+        }
+    }
+
+    /// Width the widget is actually laid out at: the stored width, clamped,
+    /// and widened to `threeColumnMinWidth` when three columns are forced.
+    public static func effectiveWidth(stored: Double, mode: ColumnMode) -> Double {
+        let width = clampWidth(stored)
+        return mode == .three ? max(width, threeColumnMinWidth) : width
+    }
+
+    // MARK: - Corner radius
+
+    /// Corner radius of the widget background (points).
+    public static let cornerRadiusKey = "cornerRadius"
+    /// Keeps the look existing users are used to.
+    public static let defaultCornerRadius: Double = 12
+    /// Roughly what native macOS desktop widgets use.
+    public static let nativeCornerRadius: Double = 24
+    public static let minCornerRadius: Double = 0
+    public static let maxCornerRadius: Double = 32
+
+    public static func clampCornerRadius(_ radius: Double) -> Double {
+        min(max(radius, minCornerRadius), maxCornerRadius)
+    }
+
+    // MARK: - Ko-fi badge
+
+    /// Whether the Ko-fi "Support" badge is shown in the widget title bar.
+    public static let showKofiKey = "showKofi"
+    public static let defaultShowKofi: Bool = true
 
     // MARK: - Background opacity
 
@@ -109,4 +177,9 @@ public enum WidgetSettings {
             ? defaultVisible
             : defaults.bool(forKey: widgetVisibleKey)
     }
+}
+
+public extension Notification.Name {
+    /// Posted by the widget's gear button; the app answers by opening Settings.
+    static let moleWidgetOpenSettings = Notification.Name("MoleWidgetOpenSettings")
 }

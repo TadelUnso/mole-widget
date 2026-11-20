@@ -10,38 +10,10 @@ enum WidgetSection: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
 }
 
-// MARK: - Size presets
-
-/// One-tap presets that set the visible section mix.
-/// nil activePreset means the user has a custom selection that matches none of the three.
-private enum SizePreset: CaseIterable {
-    case small, medium, large
-
-    var sections: Set<WidgetSection> {
-        switch self {
-        case .small:  return [.cpu, .memory]
-        case .medium: return [.cpu, .memory, .disk, .power]
-        case .large:  return Set(WidgetSection.allCases)
-        }
-    }
-
-    var label: String {
-        switch self { case .small: "S"; case .medium: "M"; case .large: "L" }
-    }
-
-    var helpText: String {
-        switch self {
-        case .small:  return "Small — CPU & Memory"
-        case .medium: return "Medium — CPU, Memory, Disk & Power"
-        case .large:  return "Large — all sections"
-        }
-    }
-}
-
 // MARK: - WidgetRootView
 
 /// Root widget view: an always-visible title bar (app glyph + name on the
-/// left, update/lock controls on the right), a dynamic grid of sections on
+/// left, settings/lock/hide controls on the right), a dynamic grid of sections on
 /// a dark backdrop, and an invisible resize handle along the right edge
 /// (drag to adjust width).
 public struct WidgetRootView: View {
@@ -50,10 +22,15 @@ public struct WidgetRootView: View {
     @AppStorage(WidgetSettings.positionLockedKey) private var positionLocked = false
     @AppStorage(WidgetSettings.widgetVisibleKey) private var widgetVisible = true
     @AppStorage(WidgetSettings.widgetWidthKey) private var widgetWidth = WidgetSettings.defaultWidth
+    @AppStorage(WidgetSettings.showKofiKey) private var showKofi = WidgetSettings.defaultShowKofi
+    @AppStorage(WidgetSettings.columnModeKey)
+    private var columnMode = WidgetSettings.defaultColumnMode.rawValue
 
     // Appearance
     @AppStorage(WidgetSettings.backgroundOpacityKey)
     private var backgroundOpacity = WidgetSettings.defaultOpacity
+    @AppStorage(WidgetSettings.cornerRadiusKey)
+    private var cornerRadius = WidgetSettings.defaultCornerRadius
     @AppStorage(WidgetSettings.fontSizeKey)
     private var fontSize = WidgetSettings.defaultFontSize
     @AppStorage(WidgetSettings.fontStyleKey)
@@ -70,9 +47,23 @@ public struct WidgetRootView: View {
 
     @State private var dragStartWidth: Double?
 
-    /// Two columns + inter-column spacing (24) + horizontal padding (2×16).
+    private var resolvedColumnMode: WidgetSettings.ColumnMode {
+        WidgetSettings.resolveColumnMode(columnMode)
+    }
+
+    /// Width the widget is laid out at (forced three columns widen it).
+    private var effectiveWidth: Double {
+        WidgetSettings.effectiveWidth(stored: widgetWidth, mode: resolvedColumnMode)
+    }
+
+    private var columnCount: Int {
+        WidgetSettings.columnCount(mode: resolvedColumnMode, width: effectiveWidth)
+    }
+
+    /// N columns + inter-column spacing (24 each) + horizontal padding (2×16).
     private var columnWidth: CGFloat {
-        (WidgetSettings.clampWidth(widgetWidth) - 24 - 32) / 2
+        let n = CGFloat(columnCount)
+        return (effectiveWidth - 24 * (n - 1) - 32) / n
     }
 
     /// Ordered list of enabled section slots.
@@ -87,30 +78,6 @@ public struct WidgetRootView: View {
             case .processes: return showProcesses
             }
         }
-    }
-
-    /// nil when the current section mix doesn't match any preset.
-    private var activePreset: SizePreset? {
-        let current = Set(WidgetSection.allCases.filter { section in
-            switch section {
-            case .cpu:       return showCPU
-            case .memory:    return showMemory
-            case .disk:      return showDisk
-            case .power:     return showPower
-            case .network:   return showNetwork
-            case .processes: return showProcesses
-            }
-        })
-        return SizePreset.allCases.first { $0.sections == current }
-    }
-
-    private func applyPreset(_ preset: SizePreset) {
-        showCPU       = preset.sections.contains(.cpu)
-        showMemory    = preset.sections.contains(.memory)
-        showDisk      = preset.sections.contains(.disk)
-        showPower     = preset.sections.contains(.power)
-        showNetwork   = preset.sections.contains(.network)
-        showProcesses = preset.sections.contains(.processes)
     }
 
     public init(store: MetricsStore) {
@@ -134,21 +101,18 @@ public struct WidgetRootView: View {
 
                 if !enabledSections.isEmpty {
                     Grid(alignment: .topLeading, horizontalSpacing: 24, verticalSpacing: 16) {
-                        // Chunk the enabled sections into pairs; the odd tail sits alone.
-                        // Row identity = leading section, so rows keep stable identity
-                        // when other sections are toggled on/off.
-                        let pairs = enabledSections.chunks(of: 2)
-                        ForEach(pairs, id: \.[0].id) { pair in
+                        // Chunk the enabled sections into rows of `columnCount`; a short
+                        // tail row is padded with spacers. Row identity = leading section,
+                        // so rows keep stable identity when other sections are toggled.
+                        let rows = enabledSections.chunks(of: columnCount)
+                        ForEach(rows, id: \.[0].id) { row in
                             GridRow {
-                                // Leading cell (always present)
-                                sectionView(for: pair[0])
-                                    .frame(width: columnWidth, alignment: .topLeading)
-                                // Trailing cell (present only in full pairs)
-                                if pair.count > 1 {
-                                    sectionView(for: pair[1])
+                                ForEach(row) { section in
+                                    sectionView(for: section)
                                         .frame(width: columnWidth, alignment: .topLeading)
-                                } else {
-                                    // Empty spacer to keep the grid geometry consistent
+                                }
+                                // Empty spacers keep the grid geometry consistent
+                                ForEach(row.count ..< columnCount, id: \.self) { _ in
                                     Color.clear
                                         .frame(width: columnWidth)
                                 }
@@ -163,7 +127,10 @@ public struct WidgetRootView: View {
             style: WidgetSettings.resolveFontStyle(fontStyle)
         ))
         .padding(16)
-        .modifier(WidgetBackground(opacity: backgroundOpacity))
+        .modifier(WidgetBackground(
+            opacity: backgroundOpacity,
+            cornerRadius: WidgetSettings.clampCornerRadius(cornerRadius)
+        ))
         .overlay(alignment: .trailing) {
             resizeHandle
         }
@@ -172,18 +139,20 @@ public struct WidgetRootView: View {
     // MARK: - Title bar
 
     /// Always-visible first row: app name on the left,
-    /// size and lock controls on the right, Ko-fi badge centered behind them.
+    /// settings, lock and hide controls on the right, Ko-fi badge centered behind them.
     /// Permanent home of the lock — visible even when all sections are hidden.
     private var titleBar: some View {
         ZStack {
-            KofiButton()
+            if showKofi {
+                KofiButton()
+            }
             HStack(spacing: 6) {
                 Text("Mole Widget")
                     .fontWeight(.bold)
                     .foregroundStyle(Theme.header)
                 Spacer()
                 HStack(spacing: 2) {
-                    sizeButtons
+                    settingsButton
                     lockButton
                     hideButton
                 }
@@ -237,7 +206,7 @@ public struct WidgetRootView: View {
                 DragGesture(minimumDistance: 1, coordinateSpace: .global)
                     .onChanged { value in
                         guard !positionLocked else { return }
-                        let start = dragStartWidth ?? widgetWidth
+                        let start = dragStartWidth ?? effectiveWidth
                         dragStartWidth = start
                         widgetWidth = WidgetSettings.clampWidth(start + value.translation.width)
                     }
@@ -245,22 +214,23 @@ public struct WidgetRootView: View {
             )
     }
 
-    // MARK: - Size preset buttons
+    // MARK: - Settings button
 
-    private var sizeButtons: some View {
-        HStack(spacing: 0) {
-            ForEach(SizePreset.allCases, id: \.label) { preset in
-                Button { applyPreset(preset) } label: {
-                    Text(preset.label)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(activePreset == preset ? Theme.header : Theme.dim)
-                        .frame(width: 16, height: 20)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help(preset.helpText)
-            }
+    /// Opens the Settings window. The widget lives in a plain NSWindow outside
+    /// the SwiftUI scene graph, so it can't call `openSettings` itself; it posts
+    /// a notification the app's menu bar label turns into `openSettings()`.
+    private var settingsButton: some View {
+        Button {
+            NotificationCenter.default.post(name: .moleWidgetOpenSettings, object: nil)
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Theme.dim)
+                .frame(width: 20, height: 20) // hit area slightly larger than the icon
+                .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .help("Open Settings")
     }
 
     // MARK: - Lock button
@@ -361,25 +331,31 @@ private struct FrostView: NSViewRepresentable {
 /// appearance; falls back to the opaque dark panel on earlier systems.
 private struct WidgetBackground: ViewModifier {
     let opacity: Double
+    let cornerRadius: Double
+
+    /// Continuous ("squircle") corners, like native macOS widgets.
+    private var shape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    }
 
     func body(content: Content) -> some View {
         #if swift(>=6.3)
         if #available(macOS 26, *) {
             content
-                .background(Color.black.opacity(0.30), in: RoundedRectangle(cornerRadius: 12))
-                .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
+                .background(Color.black.opacity(0.30), in: shape)
+                .glassEffect(.regular, in: shape)
         } else {
             content
                 .background(
                     Theme.background.opacity(WidgetSettings.clampOpacity(opacity)),
-                    in: RoundedRectangle(cornerRadius: 12)
+                    in: shape
                 )
         }
         #else
         content
             .background(
                 Theme.background.opacity(WidgetSettings.clampOpacity(opacity)),
-                in: RoundedRectangle(cornerRadius: 12)
+                in: shape
             )
         #endif
     }
